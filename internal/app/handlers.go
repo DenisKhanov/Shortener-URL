@@ -20,16 +20,16 @@ func URL(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(shortURL))
 
 		}
-		if r.Method == http.MethodGet {
-			path := r.URL.Path[1:]
-			originURL, exists := GetOriginURL(path)
-			if !exists {
-				http.NotFound(w, r)
-			} else {
-				w.Header().Set("Location", originURL)
-				w.WriteHeader(http.StatusTemporaryRedirect)
-			}
-		}
-
 	}
+	if r.Method == http.MethodGet {
+		path := r.URL.Path[1:]
+		originURL, exists := GetOriginURL(path)
+		if !exists {
+			http.NotFound(w, r)
+		} else {
+			w.Header().Set("Location", originURL)
+			w.WriteHeader(http.StatusTemporaryRedirect)
+		}
+	}
+
 }
