@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -20,4 +20,15 @@ func TestRepository_StoreURL_GetOriginalURL_GetShortURL_GetID(t *testing.T) {
 	assert.Equal(t, shortURL, retrievedShortURL)
 
 	assert.Equal(t, 1, repo.GetID())
+}
+func TestNewDumpURL(t *testing.T) {
+	id := 1
+	shortToOrigURL := map[string]string{"short": "original"}
+	origToShortURL := map[string]string{"original": "short"}
+
+	result := NewDumpURL(id, shortToOrigURL, origToShortURL)
+
+	assert.Equal(t, id, result.id)
+	assert.Equal(t, shortToOrigURL, result.shortToOrigURL)
+	assert.Equal(t, origToShortURL, result.origToShortURL)
 }

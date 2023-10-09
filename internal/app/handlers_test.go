@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ func TestHandlers_PostURL(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockService := mocks.NewMockService(ctrl)
-	mockService.EXPECT().GetShortURL("http://original.url").Return("shortURL").AnyTimes()
+	mockService.EXPECT().GetShortURL("http://original.url").Return("shortURL", nil).AnyTimes()
 
 	handlers := NewHandlers(mockService, nil)
 

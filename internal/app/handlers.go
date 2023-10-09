@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"github.com/gorilla/mux"
@@ -29,7 +29,10 @@ func (h Handlers) PostURL(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 
 	} else {
-		shortURL := h.service.GetShortURL(string(url))
+		shortURL, err := h.service.GetShortURL(string(url))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte(shortURL))
