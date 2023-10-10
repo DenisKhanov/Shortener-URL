@@ -1,6 +1,7 @@
-package app
+package handlers
 
 import (
+	"github.com/DenisKhanov/shorterURL/internal/app/service"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
@@ -11,11 +12,11 @@ type Handler interface {
 	URL(w http.ResponseWriter, r *http.Request)
 }
 type Handlers struct {
-	service Service
+	service service.Service
 	handler Handler
 }
 
-func NewHandlers(service Service, handler Handler) *Handlers {
+func NewHandlers(service service.Service, handler Handler) *Handlers {
 	return &Handlers{
 		service: service,
 		handler: handler,

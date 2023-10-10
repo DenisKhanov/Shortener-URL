@@ -1,7 +1,8 @@
-package app
+package service
 
 import (
 	"fmt"
+	"github.com/DenisKhanov/shorterURL/internal/app/storage"
 	"strings"
 )
 
@@ -12,11 +13,11 @@ type Service interface {
 }
 
 type Services struct {
-	storage Repository
+	storage storage.Repository
 	service Service
 }
 
-func NewServices(storage Repository, service Service) *Services {
+func NewServices(storage storage.Repository, service Service) *Services {
 	return &Services{
 		storage: storage,
 		service: service,
