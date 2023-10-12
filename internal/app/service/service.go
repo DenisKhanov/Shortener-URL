@@ -15,27 +15,29 @@ type Service interface {
 type Services struct {
 	storage storage.Repository
 	service Service
+	baseURL string
 }
 
-func NewServices(storage storage.Repository, service Service) *Services {
+func NewServices(storage storage.Repository, service Service, baseUrl string) *Services {
 	return &Services{
 		storage: storage,
 		service: service,
+		baseURL: baseUrl,
 	}
 }
 
-// GetShortURL returns the short URL ("http://localhost:8080/"+shortURL)
+// GetShortURL returns the short URL
 func (s Services) GetShortURL(url string) (string, error) {
 	value, exists := s.storage.GetShortURL(url)
 	if exists {
-		return "http://localhost:8080/" + value, nil
+		return s.baseURL + "/" + value, nil
 	} else {
 		shortURL := base62Encode(s.storage.GetID())
 		err := s.storage.StoreURL(url, shortURL)
 		if err != nil {
 			return "", err
 		}
-		return "http://localhost:8080/" + shortURL, nil
+		return s.baseURL + "/" + shortURL, nil
 	}
 }
 

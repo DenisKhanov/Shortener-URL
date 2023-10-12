@@ -14,7 +14,7 @@ func TestServices_GetShortURL_ExistingURL(t *testing.T) {
 	mockRepo := mocks.NewMockRepository(ctrl)
 	mockRepo.EXPECT().GetShortURL("http://original.url").Return("shortURL", true)
 
-	service := NewServices(mockRepo, nil)
+	service := NewServices(mockRepo, nil, "http://localhost:8080")
 	shortURL, err := service.GetShortURL("http://original.url")
 
 	assert.NoError(t, err)
@@ -29,7 +29,7 @@ func TestServices_GetShortURL_NewURL(t *testing.T) {
 	mockRepo.EXPECT().GetID().Return(1).AnyTimes()
 	mockRepo.EXPECT().StoreURL(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	service := NewServices(mockRepo, nil)
+	service := NewServices(mockRepo, nil, "http://localhost:8080")
 	shortURL, err := service.GetShortURL("http://original.url")
 	id := service.storage.GetID()
 	assert.Equal(t, 1, id)
@@ -44,7 +44,7 @@ func TestServices_GetShortURL_StoreURLError(t *testing.T) {
 	mockRepo.EXPECT().GetID().Return(1)
 	mockRepo.EXPECT().StoreURL("http://original.url", gomock.Any()).Return(errors.New("storage error"))
 
-	service := NewServices(mockRepo, nil)
+	service := NewServices(mockRepo, nil, "http://localhost:8080")
 	shortURL, err := service.GetShortURL("http://original.url")
 
 	assert.Error(t, err)
