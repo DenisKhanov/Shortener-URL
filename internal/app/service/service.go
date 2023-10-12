@@ -45,7 +45,7 @@ func (s Services) GetShortURL(url string) (string, error) {
 func (s Services) GetOriginURL(shortURL string) (string, error) {
 	originURL, exists := s.storage.GetOriginalURL(shortURL)
 	if !exists {
-		return "", fmt.Errorf("http://localhost:8080/%s not found", shortURL)
+		return "", fmt.Errorf("%s/%s not found", s.baseURL, shortURL)
 	}
 	return originURL, nil
 

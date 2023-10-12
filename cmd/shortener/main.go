@@ -12,9 +12,11 @@ import (
 
 func main() {
 	cfg := config.NewConfig()
+	fmt.Println("Server Address:", cfg.EnvServAdr)
+	fmt.Println("Base URL:", cfg.EnvBaseURL)
 	repository := storage.NewRepository(214134121, make(map[string]string), make(map[string]string))
 	var s service.Service
-	var myService = service.NewServices(repository, s, cfg.BaseURL)
+	var myService = service.NewServices(repository, s, cfg.EnvBaseURL)
 	var handler handlers.Handler
 	var myHandler = handlers.NewHandlers(*myService, handler)
 
@@ -22,9 +24,9 @@ func main() {
 	r.HandleFunc("/", myHandler.PostURL)
 	r.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
 
-	fmt.Println("Server started on", cfg.FlagRunAddr)
+	fmt.Println("Server started on", cfg.EnvServAdr)
 
-	if err := http.ListenAndServe(cfg.FlagRunAddr, r); err != nil {
+	if err := http.ListenAndServe(cfg.EnvServAdr, r); err != nil {
 		panic(err)
 	}
 }

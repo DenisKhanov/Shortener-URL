@@ -67,7 +67,7 @@ func TestServices_GetOriginURL(t *testing.T) {
 
 	mockRepo.EXPECT().GetOriginalURL("invalid_url").Return("", false)
 	_, err = service.GetOriginURL("invalid_url")
-	assert.Equal(t, errors.New("http://localhost:8080/invalid_url not found"), err)
+	assert.Equal(t, errors.New("/invalid_url not found"), err)
 }
 
 func TestBase62Encode(t *testing.T) {

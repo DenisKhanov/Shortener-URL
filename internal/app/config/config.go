@@ -1,16 +1,31 @@
 package config
 
-import "flag"
+import (
+	"flag"
+	"github.com/caarlos0/env"
+	"log"
+)
 
-type Config struct {
-	FlagRunAddr string
-	BaseURL     string
+type ENVConfig struct {
+	EnvServAdr string `env:"SERVER_ADDRESS"`
+	EnvBaseURL string `env:"BASE_URL"`
 }
 
-func NewConfig() *Config {
-	cfg := &Config{}
-	flag.StringVar(&cfg.FlagRunAddr, "a", "localhost:8080", "HTTP server address")
-	flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
-	flag.Parse()
-	return cfg
+func NewConfig() *ENVConfig {
+	var cfg ENVConfig
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if cfg.EnvServAdr == "" || cfg.EnvBaseURL == "" {
+		if cfg.EnvServAdr == "" {
+			flag.StringVar(&cfg.EnvServAdr, "a", "localhost:8080", "HTTP server address")
+		}
+		if cfg.EnvBaseURL == "" {
+			flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
+		}
+		flag.Parse()
+	}
+
+	return &cfg
 }
