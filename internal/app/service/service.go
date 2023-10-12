@@ -18,11 +18,11 @@ type Services struct {
 	baseURL string
 }
 
-func NewServices(storage storage.Repository, service Service, baseUrl string) *Services {
+func NewServices(storage storage.Repository, service Service, baseURL string) *Services {
 	return &Services{
 		storage: storage,
 		service: service,
-		baseURL: baseUrl,
+		baseURL: baseURL,
 	}
 }
 
