@@ -24,7 +24,7 @@ func TestRepository(t *testing.T) {
 		originalURL string
 		shortURL    string
 		exists      bool
-		validId     int
+		validID     int
 		repoMethod  RepositoryURL
 	}{
 		{
@@ -32,7 +32,7 @@ func TestRepository(t *testing.T) {
 			originalURL: "http://original.url",
 			shortURL:    "A4UUE",
 			exists:      true,
-			validId:     214134122,
+			validID:     214134122,
 			repoMethod:  repository,
 		},
 	}
@@ -50,7 +50,7 @@ func TestRepository(t *testing.T) {
 			if assert.Equal(t, tt.exists, existsShort) {
 				assert.Equal(t, tt.shortURL, resultShort)
 			}
-			assert.Equal(t, tt.validId, tt.repoMethod.GetIDFromDB())
+			assert.Equal(t, tt.validID, tt.repoMethod.GetIDFromDB())
 		})
 	}
 }
