@@ -9,48 +9,44 @@ import (
 
 func TestNewConfig(t *testing.T) {
 	tests := []struct {
+		name        string
 		envServAddr string
 		envBaseURL  string
 		args        []string
 		expected    *ENVConfig
 	}{
-		// ... existing tests
 		{
+			name:     "test config not environment & not flags",
 			args:     []string{"cmd"},
 			expected: &ENVConfig{EnvServAdr: "localhost:8080", EnvBaseURL: "http://localhost:8080"},
 		},
 		{
-			args:     []string{"cmd", "-a", "localhost:9090", "-b", "http://test.com"},
-			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://test.com"},
+			name:     "test config not environment",
+			args:     []string{"cmd", "-a", "localhost:9090", "-b", "http://flags"},
+			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://flags"},
 		},
 		{
+			name:        "test config environment & flags",
 			envServAddr: "localhost:9090",
-			envBaseURL:  "http://example.com",
-			args:        []string{"cmd", "-a", "localhost:7070", "-b", "http://test.com"},
-			expected:    &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://example.com"},
+			envBaseURL:  "http://enviroment",
+			args:        []string{"cmd", "-a", "localhost:7070", "-b", "http://flags"},
+			expected:    &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://enviroment"},
 		},
 	}
 
-	for _, test := range tests {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.envServAddr != "" {
+				os.Setenv("SERVER_ADDRESS", tt.envServAddr)
+			}
+			if tt.envBaseURL != "" {
+				os.Setenv("BASE_URL", tt.envBaseURL)
+			}
 
-		if test.envServAddr != "" {
-			os.Setenv("SERVER_ADDRESS", test.envServAddr)
-		} else {
-			os.Unsetenv("SERVER_ADDRESS")
-		}
-		if test.envBaseURL != "" {
-			os.Setenv("BASE_URL", test.envBaseURL)
-		} else {
-			os.Unsetenv("BASE_URL")
-		}
-
-		oldArgs := os.Args
-		os.Args = test.args
-		defer func() { os.Args = oldArgs }()
-
-		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError) // Сбрасываем значение флагов перед каждым тестом
-		cfg := NewConfig()
-
-		assert.Equal(t, test.expected, cfg)
+			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError) // Сбрасываем значение флагов перед каждым тестом
+			os.Args = tt.args
+			cfg := NewConfig()
+			assert.Equal(t, tt.expected, cfg)
+		})
 	}
 }

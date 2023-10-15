@@ -1,39 +1,37 @@
-package service
+package services
 
 import (
 	"fmt"
-	"github.com/DenisKhanov/shorterURL/internal/app/storage"
 	"strings"
 )
 
 //go:generate mockgen -source=service.go -destination=mocks/service_mock.go -package=mocks
-type Service interface {
-	GetShortURL(url string) (string, error)
-	GetOriginURL(shortURL string) (string, error)
+type Repository interface {
+	StoreURLSInDB(originalURL, shortURL string) error
+	GetShortURLFromDB(originalURL string) (string, bool)
+	GetOriginalURLFromDB(shortURL string) (string, bool)
+	GetIDFromDB() int
 }
-
 type Services struct {
-	storage storage.Repository
-	service Service
-	baseURL string
+	repository Repository
+	baseURL    string
 }
 
-func NewServices(storage storage.Repository, service Service, baseURL string) *Services {
+func NewServices(storage Repository, baseURL string) *Services {
 	return &Services{
-		storage: storage,
-		service: service,
-		baseURL: baseURL,
+		repository: storage,
+		baseURL:    baseURL,
 	}
 }
 
 // GetShortURL returns the short URL
 func (s Services) GetShortURL(url string) (string, error) {
-	value, exists := s.storage.GetShortURL(url)
+	value, exists := s.repository.GetShortURLFromDB(url)
 	if exists {
 		return s.baseURL + "/" + value, nil
 	} else {
-		shortURL := base62Encode(s.storage.GetID())
-		err := s.storage.StoreURL(url, shortURL)
+		shortURL := base62Encode(s.repository.GetIDFromDB())
+		err := s.repository.StoreURLSInDB(url, shortURL)
 		if err != nil {
 			return "", err
 		}
@@ -41,9 +39,9 @@ func (s Services) GetShortURL(url string) (string, error) {
 	}
 }
 
-// GetOriginURL returns the origin URL for the given short URL
-func (s Services) GetOriginURL(shortURL string) (string, error) {
-	originURL, exists := s.storage.GetOriginalURL(shortURL)
+// GetOriginalURL returns the origin URL for the given short URL
+func (s Services) GetOriginalURL(shortURL string) (string, error) {
+	originURL, exists := s.repository.GetOriginalURLFromDB(shortURL)
 	if !exists {
 		return "", fmt.Errorf("%s/%s not found", s.baseURL, shortURL)
 	}

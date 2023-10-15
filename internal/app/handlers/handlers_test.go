@@ -2,7 +2,8 @@ package handlers
 
 import (
 	"bytes"
-	"github.com/DenisKhanov/shorterURL/internal/app/mocks"
+	"errors"
+	"github.com/DenisKhanov/shorterURL/internal/app/handlers/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -11,40 +12,111 @@ import (
 	"testing"
 )
 
-func TestHandlers_PostURL(t *testing.T) {
+func TestNewHandlers(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	mockService := mocks.NewMockService(ctrl)
-	mockService.EXPECT().GetShortURL("http://original.url").Return("shortURL", nil).AnyTimes()
+	handlers := NewHandlers(mockService)
 
-	handlers := NewHandlers(mockService, nil)
+	if handlers.service != mockService {
+		t.Errorf("Expected service to be set, got %v", handlers.service)
+	}
+}
 
-	request := httptest.NewRequest("POST", "/", bytes.NewBufferString("http://original.url"))
-	w := httptest.NewRecorder()
+func TestHandlers_PostURL(t *testing.T) {
 
-	handlers.PostURL(w, request)
+	tests := []struct {
+		name             string
+		inputURL         string
+		expectedShortURL string
+		expectedStatus   int
+		mockSetup        func(mockService *mocks.MockService)
+	}{
+		{
+			name:             "POST Valid URL",
+			inputURL:         "http://original.url",
+			expectedShortURL: "94UUE",
+			expectedStatus:   http.StatusCreated,
+			mockSetup: func(mockService *mocks.MockService) {
+				mockService.EXPECT().GetShortURL("http://original.url").Return("94UUE", nil).AnyTimes()
+			},
+		},
+		{
+			name:             "POST not valid URL",
+			inputURL:         "original.url",
+			expectedShortURL: "",
+			expectedStatus:   http.StatusBadRequest,
+			mockSetup: func(mockService *mocks.MockService) {
+				mockService.EXPECT().GetShortURL("original.url").Return("", nil).AnyTimes()
+			},
+		}, {
+			name:             "POST service get error",
+			inputURL:         "http://original.url",
+			expectedShortURL: "",
+			expectedStatus:   http.StatusBadRequest,
+			mockSetup: func(mockService *mocks.MockService) {
+				mockService.EXPECT().GetShortURL("http://original.url").Return("", errors.New("some error")).AnyTimes()
+			},
+		},
+	}
 
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "shortURL", w.Body.String())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockService := mocks.NewMockService(ctrl)
+			tt.mockSetup(mockService)
+			r := httptest.NewRequest("POST", "/", bytes.NewBufferString(tt.inputURL))
+			w := httptest.NewRecorder()
+			handler := Handlers{service: mockService}
+			http.HandlerFunc(handler.PostURL).ServeHTTP(w, r)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedShortURL, w.Body.String())
+		})
+	}
 }
 
 func TestHandlers_GetURL(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockService := mocks.NewMockService(ctrl)
-	mockService.EXPECT().GetOriginURL("shortURL").Return("http://original.url", nil)
-
-	handlers := NewHandlers(mockService, nil)
-
-	request := httptest.NewRequest("GET", "/shortURL", nil)
-
-	w := httptest.NewRecorder()
-	router := mux.NewRouter()
-	router.HandleFunc("/{id}", handlers.GetURL).Methods("GET")
-	router.ServeHTTP(w, request)
-
-	assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
-	assert.Equal(t, "http://original.url", w.Header().Get("Location"))
+	tests := []struct {
+		name           string
+		shortURL       string
+		expectedStatus int
+		expectedURL    string
+		mockSetup      func(mockService *mocks.MockService)
+	}{
+		{
+			name:           "GET valid shortURL",
+			shortURL:       "/94UUE",
+			expectedStatus: http.StatusTemporaryRedirect,
+			expectedURL:    "http://original.url",
+			mockSetup: func(mockService *mocks.MockService) {
+				mockService.EXPECT().GetOriginalURL("94UUE").Return("http://original.url", nil).AnyTimes()
+			},
+		},
+		{
+			name:           "GET service get error",
+			shortURL:       "/94UUE",
+			expectedStatus: http.StatusBadRequest,
+			expectedURL:    "",
+			mockSetup: func(mockService *mocks.MockService) {
+				mockService.EXPECT().GetOriginalURL("94UUE").Return("", errors.New("some error")).AnyTimes()
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockService := mocks.NewMockService(ctrl)
+			tt.mockSetup(mockService)
+			handler := Handlers{service: mockService}
+			r := httptest.NewRequest("GET", tt.shortURL, nil)
+			w := httptest.NewRecorder()
+			router := mux.NewRouter()
+			router.HandleFunc("/{id}", handler.GetURL).Methods("GET")
+			router.ServeHTTP(w, r)
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedURL, w.Header().Get("Location"))
+		})
+	}
 }

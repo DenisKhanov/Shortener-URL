@@ -1,57 +1,55 @@
 package handlers
 
 import (
-	"github.com/DenisKhanov/shorterURL/internal/app/service"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 //go:generate mockgen -source=handlers.go -destination=mocks/handlers_mock.go -package=mocks
-type Handler interface {
-	URL(w http.ResponseWriter, r *http.Request)
-}
-type Handlers struct {
-	service service.Service
-	handler Handler
+type Service interface {
+	GetShortURL(url string) (string, error)
+	GetOriginalURL(shortURL string) (string, error)
 }
 
-func NewHandlers(service service.Service, handler Handler) *Handlers {
+type Handlers struct {
+	service Service
+}
+
+func NewHandlers(service Service) *Handlers {
 	return &Handlers{
 		service: service,
-		handler: handler,
 	}
 }
 func (h Handlers) PostURL(w http.ResponseWriter, r *http.Request) {
-	//if r.Method == http.MethodPost {
-	url, _ := io.ReadAll(r.Body)
-	r.Body.Close()
-	if len(url) == 0 {
+	linc, _ := io.ReadAll(r.Body)
+	lincString := string(linc)
+	defer r.Body.Close()
+
+	parsedLinc, err := url.Parse(lincString)
+	if err != nil || parsedLinc.Scheme == "" || parsedLinc.Host == "" {
 		w.WriteHeader(http.StatusBadRequest)
-
-	} else {
-		shortURL, err := h.service.GetShortURL(string(url))
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-		w.WriteHeader(http.StatusCreated)
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte(shortURL))
-
+		return
 	}
-	//} else {
-	//	w.WriteHeader(http.StatusBadRequest)
-	//}
+	shortURL, err := h.service.GetShortURL(lincString)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(shortURL))
 
 }
 func (h Handlers) GetURL(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	shortURL := vars["id"]
-	originURL, err := h.service.GetOriginURL(shortURL)
+	originURL, err := h.service.GetOriginalURL(shortURL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		w.Header().Set("Location", originURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+		return
 	}
+	w.Header().Set("Location", originURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
