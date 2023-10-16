@@ -14,8 +14,9 @@ func main() {
 	cfg := config.NewConfig()
 	fmt.Println("Server Address:", cfg.EnvServAdr)
 	fmt.Println("Base URL:", cfg.EnvBaseURL)
-	repository := repositoryes.NewRepository(214134121, make(map[string]string), make(map[string]string))
-	myService := services.NewServices(repository, cfg.EnvBaseURL)
+	repository := repositoryes.NewRepository(make(map[string]string), make(map[string]string))
+
+	myService := services.NewServices(repository, services.Services{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myService)
 
 	r := mux.NewRouter()

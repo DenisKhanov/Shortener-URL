@@ -33,26 +33,12 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// GetIDFromDB mocks base method.
-func (m *MockRepository) GetIDFromDB() int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetIDFromDB")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// GetIDFromDB indicates an expected call of GetIDFromDB.
-func (mr *MockRepositoryMockRecorder) GetIDFromDB() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIDFromDB", reflect.TypeOf((*MockRepository)(nil).GetIDFromDB))
-}
-
 // GetOriginalURLFromDB mocks base method.
-func (m *MockRepository) GetOriginalURLFromDB(shortURL string) (string, bool) {
+func (m *MockRepository) GetOriginalURLFromDB(shortURL string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOriginalURLFromDB", shortURL)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
@@ -63,11 +49,11 @@ func (mr *MockRepositoryMockRecorder) GetOriginalURLFromDB(shortURL interface{})
 }
 
 // GetShortURLFromDB mocks base method.
-func (m *MockRepository) GetShortURLFromDB(originalURL string) (string, bool) {
+func (m *MockRepository) GetShortURLFromDB(originalURL string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetShortURLFromDB", originalURL)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
@@ -89,4 +75,41 @@ func (m *MockRepository) StoreURLSInDB(originalURL, shortURL string) error {
 func (mr *MockRepositoryMockRecorder) StoreURLSInDB(originalURL, shortURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLSInDB", reflect.TypeOf((*MockRepository)(nil).StoreURLSInDB), originalURL, shortURL)
+}
+
+// MockEncoder is a mock of Encoder interface.
+type MockEncoder struct {
+	ctrl     *gomock.Controller
+	recorder *MockEncoderMockRecorder
+}
+
+// MockEncoderMockRecorder is the mock recorder for MockEncoder.
+type MockEncoderMockRecorder struct {
+	mock *MockEncoder
+}
+
+// NewMockEncoder creates a new mock instance.
+func NewMockEncoder(ctrl *gomock.Controller) *MockEncoder {
+	mock := &MockEncoder{ctrl: ctrl}
+	mock.recorder = &MockEncoderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEncoder) EXPECT() *MockEncoderMockRecorder {
+	return m.recorder
+}
+
+// CryptoBase62Encode mocks base method.
+func (m *MockEncoder) CryptoBase62Encode() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CryptoBase62Encode")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CryptoBase62Encode indicates an expected call of CryptoBase62Encode.
+func (mr *MockEncoderMockRecorder) CryptoBase62Encode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoBase62Encode", reflect.TypeOf((*MockEncoder)(nil).CryptoBase62Encode))
 }

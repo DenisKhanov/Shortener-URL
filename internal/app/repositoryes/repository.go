@@ -1,16 +1,16 @@
 package repositoryes
 
-import "errors"
+import (
+	"errors"
+)
 
 type RepositoryURL struct {
-	id             int
 	shortToOrigURL map[string]string
 	origToShortURL map[string]string
 }
 
-func NewRepository(id int, shortToOrigURL map[string]string, origToShortURL map[string]string) *RepositoryURL {
+func NewRepository(shortToOrigURL map[string]string, origToShortURL map[string]string) *RepositoryURL {
 	storage := RepositoryURL{
-		id:             id,
 		shortToOrigURL: shortToOrigURL,
 		origToShortURL: origToShortURL,
 	}
@@ -25,15 +25,17 @@ func (d *RepositoryURL) StoreURLSInDB(originalURL, shortURL string) error {
 	}
 	return nil
 }
-func (d *RepositoryURL) GetOriginalURLFromDB(shortURL string) (string, bool) {
+func (d *RepositoryURL) GetOriginalURLFromDB(shortURL string) (string, error) {
 	originalURL, exists := d.shortToOrigURL[shortURL]
-	return originalURL, exists
+	if !exists {
+		return "", errors.New("original URL not found")
+	}
+	return originalURL, nil
 }
-func (d *RepositoryURL) GetShortURLFromDB(originalURL string) (string, bool) {
+func (d *RepositoryURL) GetShortURLFromDB(originalURL string) (string, error) {
 	shortURL, exists := d.origToShortURL[originalURL]
-	return shortURL, exists
-}
-func (d *RepositoryURL) GetIDFromDB() int {
-	d.id++
-	return d.id
+	if !exists {
+		return "", errors.New("short URL not found")
+	}
+	return shortURL, nil
 }
