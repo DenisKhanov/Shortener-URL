@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/services/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -116,7 +115,7 @@ func TestServices_GetOriginalURL(t *testing.T) {
 			service := Services{repository: mockRepo, baseURL: "http://localhost:8080"}
 			result, err := service.GetOriginalURL(tt.shortURL)
 			if tt.name == "OriginalURL not found in repository" {
-				assert.EqualError(t, err, fmt.Sprintf("original URL not found"))
+				assert.EqualError(t, err, "original URL not found")
 			} else {
 				assert.NoError(t, err)
 			}
