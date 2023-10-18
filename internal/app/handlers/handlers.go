@@ -1,0 +1,57 @@
+package handlers
+
+import (
+	"github.com/gorilla/mux"
+	"io"
+	"net/http"
+	"net/url"
+)
+
+//go:generate mockgen -source=handlers.go -destination=mocks/handlers_mock.go -package=mocks
+type Service interface {
+	GetShortURL(url string) (string, error)
+	GetOriginalURL(shortURL string) (string, error)
+}
+
+type Handlers struct {
+	service Service
+}
+
+func NewHandlers(service Service) *Handlers {
+	return &Handlers{
+		service: service,
+	}
+}
+
+// PostURL
+func (h Handlers) PostURL(w http.ResponseWriter, r *http.Request) {
+	linc, _ := io.ReadAll(r.Body)
+	lincString := string(linc)
+	defer r.Body.Close()
+
+	parsedLinc, err := url.Parse(lincString)
+	if err != nil || parsedLinc.Scheme == "" || parsedLinc.Host == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	shortURL, err := h.service.GetShortURL(lincString)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(shortURL))
+
+}
+func (h Handlers) GetURL(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	shortURL := vars["id"]
+	originURL, err := h.service.GetOriginalURL(shortURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Location", originURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+}
