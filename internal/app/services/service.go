@@ -61,10 +61,7 @@ func (s Services) GetOriginalURL(shortURL string) (string, error) {
 // The returned string has a length of up to 7 characters
 func (s Services) CryptoBase62Encode() string {
 	b := make([]byte, 8) // uint64 состоит из 8 байт, но мы будем использовать только 42 бита
-	_, err := rand.Read(b)
-	if err != nil {
-		err.Error()
-	}
+	_, _ = rand.Read(b)
 	num := binary.BigEndian.Uint64(b) & ((1 << 42) - 1) // Обнуление всех бит, кроме младших 42 бит
 	chars := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var shortURL strings.Builder
