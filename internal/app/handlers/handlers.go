@@ -22,6 +22,8 @@ func NewHandlers(service Service) *Handlers {
 		service: service,
 	}
 }
+
+// PostURL
 func (h Handlers) PostURL(w http.ResponseWriter, r *http.Request) {
 	linc, _ := io.ReadAll(r.Body)
 	lincString := string(linc)
