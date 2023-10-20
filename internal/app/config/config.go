@@ -7,9 +7,9 @@ import (
 )
 
 type ENVConfig struct {
-	EnvServAdr string `env:"SERVER_ADDRESS"`
-	EnvBaseURL string `env:"BASE_URL"`
-	//EnvLogLevel string `env:"LOG_LEVEL"`
+	EnvServAdr  string `env:"SERVER_ADDRESS"`
+	EnvBaseURL  string `env:"BASE_URL"`
+	EnvLogLevel string `env:"LOG_LEVEL"`
 }
 
 func NewConfig() *ENVConfig {
@@ -18,16 +18,16 @@ func NewConfig() *ENVConfig {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if cfg.EnvServAdr == "" || cfg.EnvBaseURL == "" {
+	if cfg.EnvServAdr == "" || cfg.EnvBaseURL == "" || cfg.EnvLogLevel == "" {
 		if cfg.EnvServAdr == "" {
 			flag.StringVar(&cfg.EnvServAdr, "a", "localhost:8080", "HTTP server address")
 		}
 		if cfg.EnvBaseURL == "" {
 			flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
 		}
-		//if cfg.EnvLogLevel == "" {
-		//	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Logs level")
-		//}
+		if cfg.EnvLogLevel == "" {
+			flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Logs level")
+		}
 		flag.Parse()
 	}
 

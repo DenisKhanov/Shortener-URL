@@ -26,7 +26,7 @@ func TestNewConfig(t *testing.T) {
 			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://flags"},
 		},
 		{
-			name:     "test config flag -a not environment",
+			name:     "test config flag -a, not environment",
 			args:     []string{"cmd", "-a", "localhost:9090"},
 			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://localhost:8080"},
 		},
