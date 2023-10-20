@@ -28,13 +28,13 @@ func init() {
 func main() {
 	fmt.Println("Server Address:", cfg.EnvServAdr)
 	fmt.Println("Base URL:", cfg.EnvBaseURL)
-	fmt.Println("Log level:", cfg.EnvLogLevel)
+	//fmt.Println("Log level:", cfg.EnvLogLevel)
 
-	level, err := logrus.ParseLevel(cfg.EnvLogLevel)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	logrus.SetLevel(level)
+	//level, err := logrus.ParseLevel(cfg.EnvLogLevel)
+	//if err != nil {
+	//	logrus.Fatal(err)
+	//}
+	logrus.SetLevel(logrus.InfoLevel)
 	logrus.SetReportCaller(true)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
