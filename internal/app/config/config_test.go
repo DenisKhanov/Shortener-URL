@@ -26,11 +26,11 @@ func TestNewConfig(t *testing.T) {
 			args:     []string{"cmd", "-a", "localhost:9090", "-b", "http://flags", "-l", "fatal"},
 			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://flags", EnvLogLevel: "fatal"},
 		},
-		//{
-		//	name:     "test config flag -a not environment",
-		//	args:     []string{"cmd", "-a", "localhost:9090"},
-		//	expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://localhost:8080", EnvLogLevel: "info"},
-		//},
+		{
+			name:     "test config flag -a not environment",
+			args:     []string{"cmd", "-a", "localhost:9090"},
+			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://localhost:8080", EnvLogLevel: "info"},
+		},
 		//{
 		//	name:        "test config environment & flags",
 		//	envServAddr: "localhost:9090",
