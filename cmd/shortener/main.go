@@ -9,9 +9,13 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/repositoryes"
 	"github.com/DenisKhanov/shorterURL/internal/app/services"
 	"github.com/gorilla/mux"
+	"github.com/natefinch/lumberjack"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -20,18 +24,40 @@ func main() {
 	cfg := config.NewConfig()
 	fmt.Println("Server Address:", cfg.EnvServAdr)
 	fmt.Println("Base URL:", cfg.EnvBaseURL)
+	fmt.Println("Log level:", cfg.EnvLogLevel)
+
+	level, err := logrus.ParseLevel(cfg.EnvLogLevel)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	logrus.SetLevel(level)
+	logrus.SetReportCaller(true)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			_, filename := path.Split(f.File)
+			filename = fmt.Sprintf("%s:%d", filename, f.Line)
+			return "", filename
+		},
+	})
+	logrus.SetOutput(&lumberjack.Logger{
+		Filename:   "app.log",
+		MaxSize:    10, //mb
+		MaxBackups: 3,
+		MaxAge:     30, //day
+	})
 
 	myRepository := repositoryes.NewRepository(make(map[string]string), make(map[string]string))
 	myService := services.NewServices(myRepository, services.Services{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myService)
 
 	r := mux.NewRouter()
+	loggerRouter := myHandler.MiddlewareLogging(r)
 	r.HandleFunc("/", myHandler.PostURL)
 	r.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
 
-	server := &http.Server{Addr: cfg.EnvServAdr, Handler: r}
+	server := &http.Server{Addr: cfg.EnvServAdr, Handler: loggerRouter}
 
-	fmt.Println("Server started on", cfg.EnvServAdr)
+	logrus.Info("Starting server on: ", cfg.EnvServAdr)
 
 	go func() {
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {

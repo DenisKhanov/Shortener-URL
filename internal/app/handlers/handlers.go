@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 //go:generate mockgen -source=handlers.go -destination=mocks/handlers_mock.go -package=mocks
@@ -24,6 +26,7 @@ func NewHandlers(service Service) *Handlers {
 }
 
 // PostURL
+
 func (h Handlers) PostURL(w http.ResponseWriter, r *http.Request) {
 	linc, _ := io.ReadAll(r.Body)
 	lincString := string(linc)
@@ -54,4 +57,50 @@ func (h Handlers) GetURL(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Location", originURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+type responseData struct {
+	status int
+	size   int
+}
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	responseData *responseData
+}
+
+func (r *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.responseData.size += size
+	return size, err
+}
+func (r *loggingResponseWriter) WriteHeader(statusCode int) {
+	r.ResponseWriter.WriteHeader(statusCode)
+	r.responseData.status = statusCode
+}
+
+func (h Handlers) MiddlewareLogging(ha http.Handler) http.Handler {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		responseData := &responseData{
+			status: 0,
+			size:   0,
+		}
+		lw := loggingResponseWriter{
+			ResponseWriter: w,
+			responseData:   responseData,
+		}
+
+		url := r.RequestURI
+		method := r.Method
+		duration := time.Since(start)
+		ha.ServeHTTP(&lw, r)
+		logrus.WithFields(logrus.Fields{
+			"url":      url,
+			"method":   method,
+			"status":   responseData.status,
+			"duration": duration,
+			"size":     responseData.size,
+		}).Info("Обработан запрос")
+	}
+	return http.HandlerFunc(logFn)
 }

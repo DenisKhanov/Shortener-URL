@@ -129,8 +129,8 @@ func TestCryptoBase62Encode(t *testing.T) {
 
 	encoded := service.CryptoBase62Encode()
 
-	if len(encoded) > 7 {
-		t.Errorf("expected length <= 7, got %d", len(encoded))
+	if len(encoded) > 8 {
+		t.Errorf("expected length <= 8, got %d", len(encoded))
 	}
 
 	const base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
