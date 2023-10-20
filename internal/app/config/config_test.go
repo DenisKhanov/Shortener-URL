@@ -23,7 +23,7 @@ func TestNewConfig(t *testing.T) {
 		},
 		{
 			name:     "test config not environment",
-			args:     []string{"cmd", "-a", "localhost:9090", "-b", "http://flags", "-g", "fatal"},
+			args:     []string{"cmd", "-a", "localhost:9090", "-b", "http://flags", "-l", "fatal"},
 			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://flags", EnvLogLevel: "fatal"},
 		},
 		{
@@ -36,7 +36,7 @@ func TestNewConfig(t *testing.T) {
 			envServAddr: "localhost:9090",
 			envBaseURL:  "http://enviroment",
 			envLogLevel: "warn",
-			args:        []string{"cmd", "-a", "localhost:7070", "-b", "http://flags", "-g", "fatal"},
+			args:        []string{"cmd", "-a", "localhost:7070", "-b", "http://flags", "-l", "fatal"},
 			expected:    &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://enviroment", EnvLogLevel: "warn"},
 		},
 	}
