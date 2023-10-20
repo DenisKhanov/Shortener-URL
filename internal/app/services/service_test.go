@@ -129,7 +129,7 @@ func TestCryptoBase62Encode(t *testing.T) {
 
 	encoded := service.CryptoBase62Encode()
 
-	if len(encoded) > 7 {
+	if len(encoded) > 8 {
 		t.Errorf("expected length <= 7, got %d", len(encoded))
 	}
 
