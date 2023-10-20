@@ -9,7 +9,7 @@ import (
 type ENVConfig struct {
 	EnvServAdr  string `env:"SERVER_ADDRESS"`
 	EnvBaseURL  string `env:"BASE_URL"`
-	EnvLogLevel string `env:"LOG_LEVEL"`
+	EnvLogLevel string `env:"L_LEVEL"`
 }
 
 func NewConfig() *ENVConfig {
@@ -26,7 +26,7 @@ func NewConfig() *ENVConfig {
 			flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
 		}
 		if cfg.EnvLogLevel == "" {
-			flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Logs level")
+			flag.StringVar(&cfg.EnvLogLevel, "g", "info", "Logs level")
 		}
 		flag.Parse()
 	}
