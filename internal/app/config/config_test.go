@@ -31,14 +31,14 @@ func TestNewConfig(t *testing.T) {
 			args:     []string{"cmd", "-a", "localhost:9090"},
 			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://localhost:8080", EnvLogLevel: "info"},
 		},
-		//{
-		//	name:        "test config environment & flags",
-		//	envServAddr: "localhost:9090",
-		//	envBaseURL:  "http://enviroment",
-		//	envLogLevel: "warn",
-		//	args:        []string{"cmd", "-a", "localhost:7070", "-b", "http://flags", "-l", "fatal"},
-		//	expected:    &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://enviroment", EnvLogLevel: "warn"},
-		//},
+		{
+			name:        "test config environment & flags",
+			envServAddr: "localhost:9090",
+			envBaseURL:  "http://enviroment",
+			//envLogLevel: "warn",
+			args:     []string{"cmd", "-a", "localhost:7070", "-b", "http://flags", "-l", "fatal"},
+			expected: &ENVConfig{EnvServAdr: "localhost:9090", EnvBaseURL: "http://enviroment", EnvLogLevel: "fatal"},
+		},
 	}
 
 	for _, tt := range tests {
