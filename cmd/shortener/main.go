@@ -20,8 +20,12 @@ import (
 	"time"
 )
 
+var cfg *config.ENVConfig
+
+func init() {
+	cfg = config.NewConfig()
+}
 func main() {
-	cfg := config.NewConfig()
 	fmt.Println("Server Address:", cfg.EnvServAdr)
 	fmt.Println("Base URL:", cfg.EnvBaseURL)
 	fmt.Println("Log level:", cfg.EnvLogLevel)
