@@ -59,8 +59,7 @@ func main() {
 	loggerRouter := myHandler.MiddlewareLogging(r)
 	r.HandleFunc("/", myHandler.PostURL)
 	r.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
-	r.HandleFunc("/api/shorten", myHandler.JsonURL).Methods("POST")
-
+	r.HandleFunc("/api/shorten", myHandler.JSONURL).Methods("POST")
 	server := &http.Server{Addr: cfg.EnvServAdr, Handler: loggerRouter}
 
 	logrus.Info("Starting server on: ", cfg.EnvServAdr)

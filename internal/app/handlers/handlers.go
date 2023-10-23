@@ -70,7 +70,7 @@ func (h Handlers) GetURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", originURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
-func (h Handlers) JsonURL(w http.ResponseWriter, r *http.Request) {
+func (h Handlers) JSONURL(w http.ResponseWriter, r *http.Request) {
 	var dataURL URLProcessingResult
 	if err := json.NewDecoder(r.Body).Decode(&dataURL); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
