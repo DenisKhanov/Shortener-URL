@@ -151,7 +151,7 @@ func TestHandlers_JsonURL(t *testing.T) {
 			r := httptest.NewRequest("POST", "/api/shorten", bytes.NewBufferString(tt.inputJSON))
 			w := httptest.NewRecorder()
 			handler := Handlers{service: mockService}
-			http.HandlerFunc(handler.JsonURL).ServeHTTP(w, r)
+			http.HandlerFunc(handler.JSONURL).ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			var actual, expected map[string]interface{}
