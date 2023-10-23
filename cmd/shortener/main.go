@@ -36,6 +36,7 @@ func main() {
 	//}
 	logrus.SetLevel(logrus.InfoLevel)
 	logrus.SetReportCaller(true)
+
 	logrus.SetFormatter(&logrus.TextFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			_, filename := path.Split(f.File)
@@ -58,6 +59,7 @@ func main() {
 	loggerRouter := myHandler.MiddlewareLogging(r)
 	r.HandleFunc("/", myHandler.PostURL)
 	r.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
+	r.HandleFunc("/api/shorten", myHandler.JsonURL).Methods("POST")
 
 	server := &http.Server{Addr: cfg.EnvServAdr, Handler: loggerRouter}
 

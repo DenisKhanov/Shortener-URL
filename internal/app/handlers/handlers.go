@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -15,6 +16,19 @@ type Service interface {
 	GetOriginalURL(shortURL string) (string, error)
 }
 
+type URLProcessingResult struct {
+	URL    string `json:"url"`
+	Result string `json:"result"`
+}
+
+func (u URLProcessingResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Result string `json:"result"`
+	}{
+		Result: u.Result,
+	})
+}
+
 type Handlers struct {
 	service Service
 }
@@ -24,8 +38,6 @@ func NewHandlers(service Service) *Handlers {
 		service: service,
 	}
 }
-
-// PostURL
 
 func (h Handlers) PostURL(w http.ResponseWriter, r *http.Request) {
 	linc, _ := io.ReadAll(r.Body)
@@ -58,7 +70,33 @@ func (h Handlers) GetURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", originURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
+func (h Handlers) JsonURL(w http.ResponseWriter, r *http.Request) {
+	var dataURL URLProcessingResult
+	if err := json.NewDecoder(r.Body).Decode(&dataURL); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
+	result, err := h.service.GetShortURL(dataURL.URL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	dataURL.Result = result
+
+	jsonResult, err := json.Marshal(dataURL)
+	if err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(jsonResult)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+}
+
+// logging
 type responseData struct {
 	status int
 	size   int
