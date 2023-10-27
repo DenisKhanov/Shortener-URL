@@ -211,16 +211,14 @@ func (h Handlers) MiddlewareLogging(ha http.Handler) http.Handler {
 func (h Handlers) MiddlewareCompress(ha http.Handler) http.Handler {
 	compressFn := func(w http.ResponseWriter, r *http.Request) {
 		ow := w
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			ha.ServeHTTP(w, r)
-			return
-		}
-		cw := newCompressWriter(w)
-		defer cw.Close()
-		for _, v := range typeArray {
-			if strings.Contains(r.Header.Get("Content-Type"), v) {
-				ow = cw
-				break
+		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			cw := newCompressWriter(w)
+			defer cw.Close()
+			for _, v := range typeArray {
+				if strings.Contains(r.Header.Get("Content-Type"), v) {
+					ow = cw
+					break
+				}
 			}
 		}
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
@@ -229,8 +227,13 @@ func (h Handlers) MiddlewareCompress(ha http.Handler) http.Handler {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			r.Body = cr
 			defer cr.Close()
+			for _, v := range typeArray {
+				if strings.Contains(r.Header.Get("Content-Type"), v) {
+					r.Body = cr
+					break
+				}
+			}
 		}
 		ha.ServeHTTP(ow, r)
 	}
