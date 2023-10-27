@@ -56,7 +56,8 @@ func main() {
 	myHandler := handlers.NewHandlers(myService)
 
 	r := mux.NewRouter()
-	loggerRouter := myHandler.MiddlewareLogging(r)
+	compressRouter := myHandler.MiddlewareCompress(r)
+	loggerRouter := myHandler.MiddlewareLogging(compressRouter)
 	r.HandleFunc("/", myHandler.PostURL)
 	r.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
 	r.HandleFunc("/api/shorten", myHandler.JSONURL).Methods("POST")
