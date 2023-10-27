@@ -58,6 +58,7 @@ func main() {
 	r := mux.NewRouter()
 	compressRouter := myHandler.MiddlewareCompress(r)
 	loggerRouter := myHandler.MiddlewareLogging(compressRouter)
+
 	r.HandleFunc("/", myHandler.PostURL)
 	r.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
 	r.HandleFunc("/api/shorten", myHandler.JSONURL).Methods("POST")

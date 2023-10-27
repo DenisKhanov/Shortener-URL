@@ -223,18 +223,15 @@ func (h Handlers) MiddlewareCompress(ha http.Handler) http.Handler {
 				break
 			}
 		}
-		contentEncoding := r.Header.Get("Content-Encoding")
-		sendsGzip := strings.Contains(contentEncoding, "gzip")
-		if sendsGzip {
+		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			r.Body = cr
 			defer cr.Close()
 		}
-
 		ha.ServeHTTP(ow, r)
 	}
 	return http.HandlerFunc(compressFn)
