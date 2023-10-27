@@ -3,6 +3,7 @@ package handlers
 import (
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -36,6 +37,17 @@ var typeArray = [2]string{"application/json", "text/html"}
 type compressWriter struct {
 	w  http.ResponseWriter
 	zw *gzip.Writer
+}
+
+type sizeTrackingResponseWriter struct {
+	http.ResponseWriter
+	size int
+}
+
+func (sw *sizeTrackingResponseWriter) Write(data []byte) (int, error) {
+	n, err := sw.ResponseWriter.Write(data)
+	sw.size += n
+	return n, err
 }
 
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
@@ -210,17 +222,6 @@ func (h Handlers) MiddlewareLogging(ha http.Handler) http.Handler {
 }
 func (h Handlers) MiddlewareCompress(ha http.Handler) http.Handler {
 	compressFn := func(w http.ResponseWriter, r *http.Request) {
-		ow := w
-		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			cw := newCompressWriter(w)
-			defer cw.Close()
-			for _, v := range typeArray {
-				if strings.Contains(r.Header.Get("Content-Type"), v) {
-					ow = cw
-					break
-				}
-			}
-		}
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
@@ -228,14 +229,24 @@ func (h Handlers) MiddlewareCompress(ha http.Handler) http.Handler {
 				return
 			}
 			defer cr.Close()
+			r.Body = cr
+		}
+		sw := &sizeTrackingResponseWriter{ResponseWriter: w}
+		cw := newCompressWriter(sw)
+		defer cw.Close()
+
+		ha.ServeHTTP(cw, r)
+
+		contentType := w.Header().Get("Content-Type")
+		fmt.Println(sw.size)
+		if sw.size > 1400 && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			for _, v := range typeArray {
-				if strings.Contains(r.Header.Get("Content-Type"), v) {
-					r.Body = cr
+				if strings.Contains(contentType, v) {
+					w.Header().Set("Content-Encoding", "gzip")
 					break
 				}
 			}
 		}
-		ha.ServeHTTP(ow, r)
 	}
 	return http.HandlerFunc(compressFn)
 }
