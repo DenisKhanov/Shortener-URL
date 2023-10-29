@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -55,12 +56,10 @@ func main() {
 	} else {
 		projectRoot, err := os.Getwd()
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		//Объединение корневого каталога проекта с подкаталогом tmp и именем файла
-		fmt.Println(projectRoot)
 		filePath := filepath.Join(projectRoot, cfg.EnvStoragePath)
-		fmt.Println(filePath)
 		myRepository = repositoryes.NewURLInFileRepo(filePath)
 	}
 
