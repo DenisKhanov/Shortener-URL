@@ -3,7 +3,6 @@ package handlers
 import (
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -238,7 +237,6 @@ func (h Handlers) MiddlewareCompress(ha http.Handler) http.Handler {
 		ha.ServeHTTP(cw, r)
 
 		contentType := w.Header().Get("Content-Type")
-		fmt.Println(sw.size)
 		if sw.size > 1400 && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			for _, v := range typeArray {
 				if strings.Contains(contentType, v) {

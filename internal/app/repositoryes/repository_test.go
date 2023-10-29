@@ -7,24 +7,18 @@ import (
 )
 
 func TestNewRepository(t *testing.T) {
-	type args struct {
-		shortToOrigURL map[string]string
-		origToShortURL map[string]string
-	}
 	tests := []struct {
 		name string
-		args args
-		want *RepositoryURL
+		want *URLInMemoryRepo
 	}{
 		{
 			name: "Valid args",
-			args: args{map[string]string{"short": "original"}, map[string]string{"original": "short"}},
-			want: &RepositoryURL{map[string]string{"short": "original"}, map[string]string{"original": "short"}},
+			want: &URLInMemoryRepo{map[string]string{}, map[string]string{}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, NewRepository(tt.args.shortToOrigURL, tt.args.origToShortURL), "NewRepository(%v, %v)", tt.args.shortToOrigURL, tt.args.origToShortURL)
+			assert.Equalf(t, tt.want, NewURLInMemoryRepo(), "NewURLInMemoryRepo()")
 		})
 	}
 }
@@ -54,7 +48,7 @@ func TestRepositoryURL_GetOriginalURLFromDB(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &RepositoryURL{
+			d := &URLInMemoryRepo{
 				shortToOrigURL: tt.fields.shortToOrigURL,
 				origToShortURL: tt.fields.origToShortURL,
 			}
@@ -92,7 +86,7 @@ func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &RepositoryURL{
+			d := &URLInMemoryRepo{
 				shortToOrigURL: tt.fields.shortToOrigURL,
 				origToShortURL: tt.fields.origToShortURL,
 			}
@@ -129,7 +123,7 @@ func TestRepositoryURL_StoreURLSInDB(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &RepositoryURL{
+			d := &URLInMemoryRepo{
 				shortToOrigURL: tt.fields.shortToOrigURL,
 				origToShortURL: tt.fields.origToShortURL,
 			}

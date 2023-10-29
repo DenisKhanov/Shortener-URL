@@ -1,23 +1,21 @@
 package repositoryes
 
-import (
-	"errors"
-)
+import "errors"
 
-type RepositoryURL struct {
+type URLInMemoryRepo struct {
 	shortToOrigURL map[string]string
 	origToShortURL map[string]string
 }
 
-func NewRepository(shortToOrigURL map[string]string, origToShortURL map[string]string) *RepositoryURL {
-	storage := RepositoryURL{
-		shortToOrigURL: shortToOrigURL,
-		origToShortURL: origToShortURL,
+func NewURLInMemoryRepo() *URLInMemoryRepo {
+	storage := URLInMemoryRepo{
+		shortToOrigURL: make(map[string]string),
+		origToShortURL: make(map[string]string),
 	}
 	return &storage
 }
 
-func (d *RepositoryURL) StoreURLSInDB(originalURL, shortURL string) error {
+func (d *URLInMemoryRepo) StoreURLSInDB(originalURL, shortURL string) error {
 	d.origToShortURL[originalURL] = shortURL
 	d.shortToOrigURL[shortURL] = originalURL
 	if d.origToShortURL[originalURL] == "" || d.shortToOrigURL[shortURL] == "" {
@@ -25,14 +23,14 @@ func (d *RepositoryURL) StoreURLSInDB(originalURL, shortURL string) error {
 	}
 	return nil
 }
-func (d *RepositoryURL) GetOriginalURLFromDB(shortURL string) (string, error) {
+func (d *URLInMemoryRepo) GetOriginalURLFromDB(shortURL string) (string, error) {
 	originalURL, exists := d.shortToOrigURL[shortURL]
 	if !exists {
 		return "", errors.New("original URL not found")
 	}
 	return originalURL, nil
 }
-func (d *RepositoryURL) GetShortURLFromDB(originalURL string) (string, error) {
+func (d *URLInMemoryRepo) GetShortURLFromDB(originalURL string) (string, error) {
 	shortURL, exists := d.origToShortURL[originalURL]
 	if !exists {
 		return "", errors.New("short URL not found")

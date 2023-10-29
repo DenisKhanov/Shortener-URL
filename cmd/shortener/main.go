@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
@@ -26,10 +27,7 @@ func init() {
 	cfg = config.NewConfig()
 }
 func main() {
-	fmt.Println("Server Address:", cfg.EnvServAdr)
-	fmt.Println("Base URL:", cfg.EnvBaseURL)
-	//fmt.Println("Log level:", cfg.EnvLogLevel)
-
+	fmt.Printf("Server started:\nServer addres %s\nBase URL %s\nFile path %s\n", cfg.EnvServAdr, cfg.EnvBaseURL, cfg.EnvStoragePath)
 	//level, err := logrus.ParseLevel(cfg.EnvLogLevel)
 	//if err != nil {
 	//	logrus.Fatal(err)
@@ -51,17 +49,31 @@ func main() {
 		MaxAge:     30, //day
 	})
 
-	myRepository := repositoryes.NewRepository(make(map[string]string), make(map[string]string))
+	var myRepository services.Repository
+	if cfg.EnvStoragePath == "" {
+		myRepository = repositoryes.NewURLInMemoryRepo()
+	} else {
+		projectRoot, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+		//Объединение корневого каталога проекта с подкаталогом tmp и именем файла
+		fmt.Println(projectRoot)
+		filePath := filepath.Join(projectRoot, cfg.EnvStoragePath)
+		fmt.Println(filePath)
+		myRepository = repositoryes.NewURLInFileRepo(filePath)
+	}
+
 	myService := services.NewServices(myRepository, services.Services{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myService)
 
-	r := mux.NewRouter()
-	compressRouter := myHandler.MiddlewareCompress(r)
+	router := mux.NewRouter()
+	compressRouter := myHandler.MiddlewareCompress(router)
 	loggerRouter := myHandler.MiddlewareLogging(compressRouter)
 
-	r.HandleFunc("/", myHandler.PostURL)
-	r.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
-	r.HandleFunc("/api/shorten", myHandler.JSONURL).Methods("POST")
+	router.HandleFunc("/", myHandler.PostURL)
+	router.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
+	router.HandleFunc("/api/shorten", myHandler.JSONURL).Methods("POST")
 	server := &http.Server{Addr: cfg.EnvServAdr, Handler: loggerRouter}
 
 	logrus.Info("Starting server on: ", cfg.EnvServAdr)
