@@ -13,13 +13,13 @@ import (
 )
 
 type URLInFileRepo struct {
-	Uuid            string `json:"uuid"`
+	UUID            string `json:"uuid"`
 	ShortURL        string `json:"short_url"`
 	OriginalURL     string `json:"original_url"`
 	storageFilePath string
 }
 
-var countId int
+var countID int
 
 func (r *URLInFileRepo) LoadLastUUID() error {
 	file, err := os.Open(r.storageFilePath)
@@ -40,7 +40,7 @@ func (r *URLInFileRepo) LoadLastUUID() error {
 	if err != nil {
 		return err
 	}
-	countId, err = strconv.Atoi(lastRecord.Uuid)
+	countID, err = strconv.Atoi(lastRecord.UUID)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func (r *URLInFileRepo) LoadLastUUID() error {
 
 func NewURLInFileRepo(storageFilePath string) *URLInFileRepo {
 	dataFile := &URLInFileRepo{
-		Uuid:            "",
+		UUID:            "",
 		ShortURL:        "",
 		OriginalURL:     "",
 		storageFilePath: storageFilePath,
@@ -66,8 +66,8 @@ func writeLine(file *os.File, data []byte) (n int, err error) {
 }
 
 func (r *URLInFileRepo) StoreURLSInDB(originalURL, shortURL string) error {
-	countId++
-	r.Uuid = strconv.Itoa(countId)
+	countID++
+	r.UUID = strconv.Itoa(countID)
 	r.ShortURL = shortURL
 	r.OriginalURL = originalURL
 	dir := filepath.Dir(r.storageFilePath)
@@ -82,6 +82,9 @@ func (r *URLInFileRepo) StoreURLSInDB(originalURL, shortURL string) error {
 	defer file.Close()
 	var data []byte
 	data, err = json.Marshal(&r)
+	if err != nil {
+		return err
+	}
 	_, err = writeLine(file, data)
 	if err != nil {
 		return err

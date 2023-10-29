@@ -31,7 +31,7 @@ func TestNewURLInFileRepo(t *testing.T) {
 
 func TestURLInFileRepo_GetOriginalURLFromDB(t *testing.T) {
 	type fields struct {
-		Uuid            string
+		UUID            string
 		ShortURL        string
 		OriginalURL     string
 		storageFilePath string
@@ -48,7 +48,7 @@ func TestURLInFileRepo_GetOriginalURLFromDB(t *testing.T) {
 	}{
 		{
 			name:    "valid get original URL",
-			fields:  fields{"1", "short", "original", "/tmp/test.json"},
+			fields:  fields{"1", "short", "original", createTempFilePath(t)},
 			args:    args{shortURL: "short"},
 			want:    "original",
 			wantErr: assert.NoError,
@@ -57,96 +57,24 @@ func TestURLInFileRepo_GetOriginalURLFromDB(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &URLInFileRepo{
-				Uuid:            tt.fields.Uuid,
+				UUID:            tt.fields.UUID,
 				ShortURL:        tt.fields.ShortURL,
 				OriginalURL:     tt.fields.OriginalURL,
 				storageFilePath: tt.fields.storageFilePath,
 			}
+
 			got, err := r.GetOriginalURLFromDB(tt.args.shortURL)
 			if !tt.wantErr(t, err, fmt.Sprintf("GetOriginalURLFromDB(%v)", tt.args.shortURL)) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "GetOriginalURLFromDB(%v)", tt.args.shortURL)
+			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}
 }
-
-func TestURLInFileRepo_GetShortURLFromDB(t *testing.T) {
-	type fields struct {
-		Uuid            string
-		ShortURL        string
-		OriginalURL     string
-		storageFilePath string
-	}
-	type args struct {
-		originalURL string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr assert.ErrorAssertionFunc
-	}{
-		{
-			name:    "valid get short URL",
-			fields:  fields{"1", "short", "original", "/tmp/test.json"},
-			args:    args{originalURL: "original"},
-			want:    "short",
-			wantErr: assert.NoError,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &URLInFileRepo{
-				Uuid:            tt.fields.Uuid,
-				ShortURL:        tt.fields.ShortURL,
-				OriginalURL:     tt.fields.OriginalURL,
-				storageFilePath: tt.fields.storageFilePath,
-			}
-			got, err := r.GetShortURLFromDB(tt.args.originalURL)
-			if !tt.wantErr(t, err, fmt.Sprintf("GetShortURLFromDB(%v)", tt.args.originalURL)) {
-				return
-			}
-			assert.Equalf(t, tt.want, got, "GetShortURLFromDB(%v)", tt.args.originalURL)
-		})
-	}
-}
-
-func TestURLInFileRepo_LoadLastUUID(t *testing.T) {
-	type fields struct {
-		Uuid            string
-		ShortURL        string
-		OriginalURL     string
-		storageFilePath string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		wantErr assert.ErrorAssertionFunc
-	}{
-		{
-			name:    "valid last uuid",
-			fields:  fields{"1", "short", "original", "/tmp/test.json"},
-			wantErr: assert.NoError,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &URLInFileRepo{
-				Uuid:            tt.fields.Uuid,
-				ShortURL:        tt.fields.ShortURL,
-				OriginalURL:     tt.fields.OriginalURL,
-				storageFilePath: tt.fields.storageFilePath,
-			}
-			tt.wantErr(t, r.LoadLastUUID(), fmt.Sprintf("LoadLastUUID()"))
-		})
-	}
-}
-
 func TestURLInFileRepo_StoreURLSInDB(t *testing.T) {
 	type fields struct {
-		Uuid            string
+		UUID            string
 		ShortURL        string
 		OriginalURL     string
 		storageFilePath string
@@ -163,7 +91,7 @@ func TestURLInFileRepo_StoreURLSInDB(t *testing.T) {
 	}{
 		{
 			name:    "valid store short URL",
-			fields:  fields{"1", "short", "original", "/tmp/test.json"},
+			fields:  fields{"1", "short", "original", createTempFilePath(t)},
 			args:    args{originalURL: "original", shortURL: "short"},
 			wantErr: assert.NoError,
 		},
@@ -171,12 +99,87 @@ func TestURLInFileRepo_StoreURLSInDB(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &URLInFileRepo{
-				Uuid:            tt.fields.Uuid,
+				UUID:            tt.fields.UUID,
 				ShortURL:        tt.fields.ShortURL,
 				OriginalURL:     tt.fields.OriginalURL,
 				storageFilePath: tt.fields.storageFilePath,
 			}
 			tt.wantErr(t, r.StoreURLSInDB(tt.args.originalURL, tt.args.shortURL), fmt.Sprintf("StoreURLSInDB(%v, %v)", tt.args.originalURL, tt.args.shortURL))
+		})
+	}
+}
+
+func TestURLInFileRepo_GetShortURLFromDB(t *testing.T) {
+	type fields struct {
+		UUID            string
+		ShortURL        string
+		OriginalURL     string
+		storageFilePath string
+	}
+	type args struct {
+		originalURL string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name:    "valid get short URL",
+			fields:  fields{"1", "short", "original", createTempFilePath(t)},
+			args:    args{originalURL: "original"},
+			want:    "short",
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &URLInFileRepo{
+				UUID:            tt.fields.UUID,
+				ShortURL:        tt.fields.ShortURL,
+				OriginalURL:     tt.fields.OriginalURL,
+				storageFilePath: tt.fields.storageFilePath,
+			}
+			got, err := r.GetShortURLFromDB(tt.args.originalURL)
+			if !tt.wantErr(t, err, fmt.Sprintf("GetShortURLFromDB(%v)", tt.args.originalURL)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "GetShortURLFromDB(%v)", tt.args.originalURL)
+			defer os.Remove(tt.fields.storageFilePath)
+		})
+	}
+}
+
+func TestURLInFileRepo_LoadLastUUID(t *testing.T) {
+	type fields struct {
+		UUID            string
+		ShortURL        string
+		OriginalURL     string
+		storageFilePath string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name:    "valid last uuid",
+			fields:  fields{"1", "short", "original", createTempFilePath(t)},
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &URLInFileRepo{
+				UUID:            tt.fields.UUID,
+				ShortURL:        tt.fields.ShortURL,
+				OriginalURL:     tt.fields.OriginalURL,
+				storageFilePath: tt.fields.storageFilePath,
+			}
+			tt.wantErr(t, r.LoadLastUUID(), "LoadLastUUID()")
+			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}
 }
@@ -220,6 +223,20 @@ func createTempFile(t *testing.T) *os.File {
 	}
 	return tempFile
 }
+func createTempFilePath(t *testing.T) string {
+	tempFile, err := os.CreateTemp("", "testfile")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	_, err = tempFile.Write([]byte(`{"uuid":"1","short_url":"short","original_url":"original"}`))
+	if err != nil {
+		t.Fatalf("Failed to write to temp file: %v", err)
+	}
+	tempPath := tempFile.Name()
+	tempFile.Close()
+	return tempPath
+}
+
 func cleanupTempFile(t *testing.T, file *os.File) {
 	file.Close()
 	os.Remove(file.Name())
