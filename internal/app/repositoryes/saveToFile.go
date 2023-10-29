@@ -72,7 +72,7 @@ func (r *URLInFileRepo) StoreURLSInDB(originalURL, shortURL string) error {
 	r.ShortURL = shortURL
 	r.OriginalURL = originalURL
 	dir := filepath.Dir(r.storageFilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0666); err != nil {
 		log.Fatal(err)
 	}
 	file, err := os.OpenFile(r.storageFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)

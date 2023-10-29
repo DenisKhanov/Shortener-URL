@@ -11,12 +11,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"path"
-	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
@@ -54,13 +52,13 @@ func main() {
 	if cfg.EnvStoragePath == "" {
 		myRepository = repositoryes.NewURLInMemoryRepo()
 	} else {
-		projectRoot, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-		//Объединение корневого каталога проекта с подкаталогом tmp и именем файла
-		filePath := filepath.Join(projectRoot, cfg.EnvStoragePath)
-		myRepository = repositoryes.NewURLInFileRepo(filePath)
+		//projectRoot, err := os.Getwd()
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
+		////Объединение корневого каталога проекта с подкаталогом tmp и именем файла
+		//filePath := filepath.Join(projectRoot, cfg.EnvStoragePath)
+		myRepository = repositoryes.NewURLInFileRepo(cfg.EnvStoragePath)
 	}
 
 	myService := services.NewServices(myRepository, services.Services{}, cfg.EnvBaseURL)
