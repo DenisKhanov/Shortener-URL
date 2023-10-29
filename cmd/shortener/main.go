@@ -29,11 +29,11 @@ func init() {
 }
 func main() {
 	fmt.Printf("Server started:\nServer addres %s\nBase URL %s\nFile path %s\n", cfg.EnvServAdr, cfg.EnvBaseURL, cfg.EnvStoragePath)
-	//level, err := logrus.ParseLevel(cfg.EnvLogLevel)
-	//if err != nil {
-	//	logrus.Fatal(err)
-	//}
-	logrus.SetLevel(logrus.InfoLevel)
+	level, err := logrus.ParseLevel(cfg.EnvLogLevel)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	logrus.SetLevel(level)
 	logrus.SetReportCaller(true)
 
 	logrus.SetFormatter(&logrus.TextFormatter{

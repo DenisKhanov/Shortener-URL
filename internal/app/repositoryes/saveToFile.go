@@ -19,12 +19,11 @@ type URLInFileRepo struct {
 	storageFilePath string
 }
 
-var countID int
-
-func (r *URLInFileRepo) LoadLastUUID() error {
+func (r *URLInFileRepo) LoadLastUUID() int {
 	file, err := os.Open(r.storageFilePath)
 	if err != nil {
-		return err
+		logrus.Info(err)
+		return 1
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
@@ -33,18 +32,21 @@ func (r *URLInFileRepo) LoadLastUUID() error {
 		lastLine = scanner.Bytes()
 	}
 	if err = scanner.Err(); err != nil {
-		return err
+		logrus.Info(err)
+		return 1
 	}
 	var lastRecord URLInFileRepo
 	err = json.Unmarshal(lastLine, &lastRecord)
 	if err != nil {
-		return err
+		logrus.Info(err)
+		return 1
 	}
-	countID, err = strconv.Atoi(lastRecord.UUID)
+	result, err := strconv.Atoi(lastRecord.UUID)
 	if err != nil {
-		return err
+		logrus.Info(err)
+		return 1
 	}
-	return nil
+	return result + 1
 }
 
 func NewURLInFileRepo(storageFilePath string) *URLInFileRepo {
@@ -54,7 +56,6 @@ func NewURLInFileRepo(storageFilePath string) *URLInFileRepo {
 		OriginalURL:     "",
 		storageFilePath: storageFilePath,
 	}
-	dataFile.LoadLastUUID()
 	logrus.Info(dataFile)
 	return dataFile
 }
@@ -66,8 +67,8 @@ func writeLine(file *os.File, data []byte) (n int, err error) {
 }
 
 func (r *URLInFileRepo) StoreURLSInDB(originalURL, shortURL string) error {
-	countID++
-	r.UUID = strconv.Itoa(countID)
+	UUID := r.LoadLastUUID()
+	r.UUID = strconv.Itoa(UUID)
 	r.ShortURL = shortURL
 	r.OriginalURL = originalURL
 	dir := filepath.Dir(r.storageFilePath)
@@ -94,7 +95,6 @@ func (r *URLInFileRepo) StoreURLSInDB(originalURL, shortURL string) error {
 func (r *URLInFileRepo) GetOriginalURLFromDB(shortURL string) (string, error) {
 	file, err := os.OpenFile(r.storageFilePath, os.O_RDONLY, 0666)
 	if err != nil {
-		fmt.Println(err)
 		logrus.Info(err)
 		return "", err
 
@@ -110,8 +110,6 @@ func (r *URLInFileRepo) GetOriginalURLFromDB(shortURL string) (string, error) {
 			logrus.Info(err)
 			return "", err // возвращает ошибку, если не может разобрать строку
 		}
-		fmt.Println(data)
-		fmt.Println(data.ShortURL)
 		if data.ShortURL == shortURL {
 
 			return data.OriginalURL, nil
@@ -134,7 +132,6 @@ func (r *URLInFileRepo) GetShortURLFromDB(originalURL string) (string, error) {
 		if err != nil {
 			return "", err // возвращает ошибку, если не может разобрать строку
 		}
-		fmt.Println(data)
 		if data.OriginalURL == originalURL {
 			return data.ShortURL, nil
 		}

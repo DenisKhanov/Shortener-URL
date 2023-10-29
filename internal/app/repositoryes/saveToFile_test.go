@@ -160,14 +160,14 @@ func TestURLInFileRepo_LoadLastUUID(t *testing.T) {
 		storageFilePath string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		wantErr assert.ErrorAssertionFunc
+		name     string
+		fields   fields
+		expected int
 	}{
 		{
-			name:    "valid last uuid",
-			fields:  fields{"1", "short", "original", createTempFilePath(t)},
-			wantErr: assert.NoError,
+			name:     "valid last uuid",
+			fields:   fields{"1", "short", "original", createTempFilePath(t)},
+			expected: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -178,7 +178,7 @@ func TestURLInFileRepo_LoadLastUUID(t *testing.T) {
 				OriginalURL:     tt.fields.OriginalURL,
 				storageFilePath: tt.fields.storageFilePath,
 			}
-			tt.wantErr(t, r.LoadLastUUID(), "LoadLastUUID()")
+			assert.Equal(t, tt.expected, r.LoadLastUUID())
 			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}

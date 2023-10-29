@@ -10,7 +10,7 @@ type ENVConfig struct {
 	EnvServAdr     string `env:"SERVER_ADDRESS"`
 	EnvBaseURL     string `env:"BASE_URL"`
 	EnvStoragePath string `env:"FILE_STORAGE_PATH"`
-	//EnvLogLevel string `env:"LOG_LEVEL"`
+	EnvLogLevel    string `env:"LOG_LEVEL"`
 }
 
 func NewConfig() *ENVConfig {
@@ -21,6 +21,8 @@ func NewConfig() *ENVConfig {
 	flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
 
 	flag.StringVar(&cfg.EnvStoragePath, "f", "/tmp/short-url-db.json", "Path for saving data file")
+
+	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Set logg level")
 
 	flag.Parse()
 
