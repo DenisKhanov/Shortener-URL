@@ -149,7 +149,7 @@ func TestURLInMemoryRepo_ReadFileToMemoryURL(t *testing.T) {
 				batchSize:       tt.fields.batchSize,
 				storageFilePath: tt.fields.storageFilePath,
 			}
-			tt.wantErr(t, m.ReadFileToMemoryURL(), fmt.Sprintf("ReadFileToMemoryURL()"))
+			tt.wantErr(t, m.ReadFileToMemoryURL(), "ReadFileToMemoryURL()")
 			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}
@@ -201,7 +201,7 @@ func TestURLInMemoryRepo_SaveBatchToFile(t *testing.T) {
 				batchSize:       tt.fields.batchSize,
 				storageFilePath: tt.fields.storageFilePath,
 			}
-			tt.wantErr(t, m.SaveBatchToFile(), fmt.Sprintf("SaveBatchToFile()"))
+			tt.wantErr(t, m.SaveBatchToFile(), "SaveBatchToFile()")
 			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}

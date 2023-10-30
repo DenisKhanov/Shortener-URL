@@ -52,23 +52,23 @@ func (m *URLInMemoryRepo) ReadFileToMemoryURL() error {
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	var buffer []byte
-	var bufferJson URLInFileRepo
+	var bufferJSON URLInFileRepo
 	for scanner.Scan() {
 		buffer = scanner.Bytes()
-		err = json.Unmarshal(buffer, &bufferJson)
+		err = json.Unmarshal(buffer, &bufferJSON)
 		if err != nil {
 			logrus.Error(err)
 			return err
 		}
 
-		m.shortToOrigURL[bufferJson.ShortURL] = bufferJson.OriginalURL
-		m.origToShortURL[bufferJson.OriginalURL] = bufferJson.ShortURL
+		m.shortToOrigURL[bufferJSON.ShortURL] = bufferJSON.OriginalURL
+		m.origToShortURL[bufferJSON.OriginalURL] = bufferJSON.ShortURL
 	}
 	if err = scanner.Err(); err != nil {
 		logrus.Error(err)
 		return err
 	}
-	m.lastUUID, err = strconv.Atoi(bufferJson.UUID)
+	m.lastUUID, err = strconv.Atoi(bufferJSON.UUID)
 	if err != nil {
 		return err
 	}
