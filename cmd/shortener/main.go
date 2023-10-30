@@ -22,10 +22,8 @@ import (
 
 var cfg *config.ENVConfig
 
-func init() {
-	cfg = config.NewConfig()
-}
 func main() {
+	cfg = config.NewConfig()
 	fmt.Printf("Server started:\nServer addres %s\nBase URL %s\nFile path %s\n", cfg.EnvServAdr, cfg.EnvBaseURL, cfg.EnvStoragePath)
 	level, err := logrus.ParseLevel(cfg.EnvLogLevel)
 	if err != nil {
@@ -48,19 +46,7 @@ func main() {
 		MaxAge:     30, //day
 	})
 
-	var myRepository services.Repository
-	if cfg.EnvStoragePath == "" {
-		myRepository = repositoryes.NewURLInMemoryRepo()
-	} else {
-		//projectRoot, err := os.Getwd()
-		//if err != nil {
-		//	log.Fatal(err)
-		//}
-		////Объединение корневого каталога проекта с подкаталогом tmp и именем файла
-		//filePath := filepath.Join(projectRoot, cfg.EnvStoragePath)
-		myRepository = repositoryes.NewURLInFileRepo(cfg.EnvStoragePath)
-	}
-
+	myRepository := repositoryes.NewURLInMemoryRepo(cfg.EnvStoragePath)
 	myService := services.NewServices(myRepository, services.Services{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myService)
 
@@ -90,9 +76,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err = server.Shutdown(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "HTTP server Shutdown: %v\n", err)
 	}
+	err = myRepository.SaveBatchToFile()
+	if err != nil {
+		logrus.Error(err)
+	}
 	fmt.Println("Server exited")
-
 }
