@@ -16,7 +16,8 @@ import (
 func TestNewHandlers(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockService := mocks.NewMockService(ctrl)
-	handlers := NewHandlers(mockService)
+	dbConfig := "database config"
+	handlers := NewHandlers(mockService, dbConfig)
 
 	if handlers.service != mockService {
 		t.Errorf("Expected service to be set, got %v", handlers.service)

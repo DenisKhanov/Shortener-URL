@@ -11,6 +11,7 @@ type ENVConfig struct {
 	EnvBaseURL     string `env:"BASE_URL"`
 	EnvStoragePath string `env:"FILE_STORAGE_PATH"`
 	EnvLogLevel    string `env:"LOG_LEVEL"`
+	EnvDataBase    string `env:"DATABASE_DSN"`
 }
 
 func NewConfig() *ENVConfig {
@@ -23,6 +24,8 @@ func NewConfig() *ENVConfig {
 	flag.StringVar(&cfg.EnvStoragePath, "f", "/tmp/short-url-db.json", "Path for saving data file")
 
 	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Set logg level")
+
+	flag.StringVar(&cfg.EnvDataBase, "d", "user=admin password=12121212 dbname=shortenerURL sslmode=disable", "Set ConfigDB config")
 
 	flag.Parse()
 

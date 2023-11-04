@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"compress/gzip"
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -103,12 +106,14 @@ func (c *compressReader) Close() error {
 }
 
 type Handlers struct {
-	service Service
+	service  Service
+	dbConfig string
 }
 
-func NewHandlers(service Service) *Handlers {
+func NewHandlers(service Service, dbConfig string) *Handlers {
 	return &Handlers{
-		service: service,
+		service:  service,
+		dbConfig: dbConfig,
 	}
 }
 
@@ -171,6 +176,16 @@ func (h Handlers) JSONURL(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+}
+func (h Handlers) ConfigDB(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("pgx", h.dbConfig)
+	if err != nil {
+		logrus.Error(err)
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+	defer db.Close()
 }
 
 // logging
