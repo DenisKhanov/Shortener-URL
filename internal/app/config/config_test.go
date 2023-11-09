@@ -23,7 +23,7 @@ func TestNewConfig(t *testing.T) {
 				EnvBaseURL:     "http://localhost:8080",
 				EnvStoragePath: "/tmp/short-url-db.json",
 				EnvLogLevel:    "info",
-				EnvDataBase:    "user=admin password=12121212 dbname=shortenerURL sslmode=disable",
+				EnvDataBase:    "",
 			},
 		},
 		{
