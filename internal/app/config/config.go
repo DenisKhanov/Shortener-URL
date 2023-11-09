@@ -25,7 +25,7 @@ func NewConfig() *ENVConfig {
 
 	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Set logg level")
 
-	flag.StringVar(&cfg.EnvDataBase, "d", "user=admin password=12121212 dbname=shortenerURL sslmode=disable", "Set PingDB config")
+	flag.StringVar(&cfg.EnvDataBase, "d", "", "Set PingDB config")
 
 	flag.Parse()
 
