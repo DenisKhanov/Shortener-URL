@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"compress/gzip"
-	"database/sql"
+	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -21,36 +21,36 @@ type Service interface {
 	GetOriginalURL(shortURL string) (string, error)
 }
 
+type Handlers struct {
+	service Service
+	DB      *pgxpool.Pool
+}
 type URLProcessingResult struct {
 	URL    string `json:"url"`
 	Result string `json:"result"`
 }
-
-func (u URLProcessingResult) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Result string `json:"result"`
-	}{
-		Result: u.Result,
-	})
+type compressReader struct {
+	r  io.ReadCloser
+	zr *gzip.Reader
 }
-
-var typeArray = [2]string{"application/json", "text/html"}
-
 type compressWriter struct {
 	w  http.ResponseWriter
 	zw *gzip.Writer
 }
-
 type sizeTrackingResponseWriter struct {
 	http.ResponseWriter
 	size int
 }
-
-func (sw *sizeTrackingResponseWriter) Write(data []byte) (int, error) {
-	n, err := sw.ResponseWriter.Write(data)
-	sw.size += n
-	return n, err
+type responseData struct {
+	status int
+	size   int
 }
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	responseData *responseData
+}
+
+var typeArray = [2]string{"application/json", "text/html"}
 
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
@@ -58,31 +58,6 @@ func newCompressWriter(w http.ResponseWriter) *compressWriter {
 		zw: gzip.NewWriter(w),
 	}
 }
-
-func (c *compressWriter) Header() http.Header {
-	return c.w.Header()
-}
-
-func (c *compressWriter) Write(data []byte) (int, error) {
-	return c.zw.Write(data)
-}
-
-func (c *compressWriter) WriteHeader(statusCode int) {
-	if statusCode < 300 {
-		c.w.Header().Set("Content-Encoding", "gzip")
-	}
-	c.w.WriteHeader(statusCode)
-}
-
-func (c *compressWriter) Close() error {
-	return c.zw.Close()
-}
-
-type compressReader struct {
-	r  io.ReadCloser
-	zr *gzip.Reader
-}
-
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
@@ -93,27 +68,10 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 		zr: zr,
 	}, nil
 }
-
-func (c *compressReader) Read(data []byte) (n int, err error) {
-	return c.zr.Read(data)
-}
-
-func (c *compressReader) Close() error {
-	if err := c.r.Close(); err != nil {
-		return err
-	}
-	return c.zr.Close()
-}
-
-type Handlers struct {
-	service  Service
-	dbConfig string
-}
-
-func NewHandlers(service Service, dbConfig string) *Handlers {
+func NewHandlers(service Service, DB *pgxpool.Pool) *Handlers {
 	return &Handlers{
-		service:  service,
-		dbConfig: dbConfig,
+		service: service,
+		DB:      DB,
 	}
 }
 
@@ -177,25 +135,51 @@ func (h Handlers) JSONURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func (h Handlers) ConfigDB(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("pgx", h.dbConfig)
-	if err != nil {
+func (h Handlers) PingDB(w http.ResponseWriter, r *http.Request) {
+	if err := h.DB.Ping(context.Background()); err != nil {
 		logrus.Error(err)
-		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
-	defer db.Close()
 }
 
-// logging
-type responseData struct {
-	status int
-	size   int
+func (u URLProcessingResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Result string `json:"result"`
+	}{
+		Result: u.Result,
+	})
 }
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	responseData *responseData
+
+func (sw *sizeTrackingResponseWriter) Write(data []byte) (int, error) {
+	n, err := sw.ResponseWriter.Write(data)
+	sw.size += n
+	return n, err
+}
+
+func (c *compressWriter) Header() http.Header {
+	return c.w.Header()
+}
+func (c *compressWriter) Write(data []byte) (int, error) {
+	return c.zw.Write(data)
+}
+func (c *compressWriter) WriteHeader(statusCode int) {
+	if statusCode < 300 {
+		c.w.Header().Set("Content-Encoding", "gzip")
+	}
+	c.w.WriteHeader(statusCode)
+}
+func (c *compressWriter) Close() error {
+	return c.zw.Close()
+}
+func (c *compressReader) Read(data []byte) (n int, err error) {
+	return c.zr.Read(data)
+}
+func (c *compressReader) Close() error {
+	if err := c.r.Close(); err != nil {
+		return err
+	}
+	return c.zr.Close()
 }
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {

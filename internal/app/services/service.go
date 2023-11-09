@@ -7,10 +7,15 @@ import (
 )
 
 //go:generate mockgen -source=service.go -destination=mocks/service_mock.go -package=mocks
+
 type Repository interface {
 	StoreURLSInDB(originalURL, shortURL string) error
 	GetShortURLFromDB(originalURL string) (string, error)
 	GetOriginalURLFromDB(shortURL string) (string, error)
+}
+type URLInMemoryRepository interface {
+	Repository
+	SaveBatchToFile() error
 }
 type Encoder interface {
 	CryptoBase62Encode() string

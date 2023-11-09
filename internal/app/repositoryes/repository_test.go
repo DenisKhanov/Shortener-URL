@@ -149,7 +149,7 @@ func TestURLInMemoryRepo_ReadFileToMemoryURL(t *testing.T) {
 				batchSize:       tt.fields.batchSize,
 				storageFilePath: tt.fields.storageFilePath,
 			}
-			tt.wantErr(t, m.ReadFileToMemoryURL(), "ReadFileToMemoryURL()")
+			tt.wantErr(t, m.readFileToMemoryURL(), "ReadFileToMemoryURL()")
 			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}

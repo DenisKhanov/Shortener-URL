@@ -15,7 +15,6 @@ type URLInFileRepo struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
-
 type URLInMemoryRepo struct {
 	shortToOrigURL  map[string]string
 	origToShortURL  map[string]string
@@ -36,14 +35,39 @@ func NewURLInMemoryRepo(storageFilePath string) *URLInMemoryRepo {
 		batchSize:       100,
 		storageFilePath: storageFilePath,
 	}
-	err := storage.ReadFileToMemoryURL()
+	err := storage.readFileToMemoryURL()
 	if err != nil {
 		logrus.Error(err)
 	}
 	return &storage
 }
+func (m *URLInMemoryRepo) SaveBatchToFile() error {
+	startTime := time.Now() // Засекаем время начала операции
+	file, err := os.OpenFile(m.storageFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+	encoder := json.NewEncoder(writer)
+	for _, v := range m.batchBuffer {
+		err = encoder.Encode(v)
+		if err != nil {
+			return err
+		}
+	}
+	err = writer.Flush() // Запись оставшихся данных из буфера в файл
+	if err != nil {
+		return err
+	}
 
-func (m *URLInMemoryRepo) ReadFileToMemoryURL() error {
+	elapsedTime := time.Since(startTime) // Вычисляем затраченное время
+	logrus.Infof("%d URL saved in %v", m.batchCounter, elapsedTime)
+	m.batchBuffer = make([]URLInFileRepo, 0, m.batchSize)
+	return nil
+}
+func (m *URLInMemoryRepo) readFileToMemoryURL() error {
 	file, err := os.Open(m.storageFilePath)
 	if err != nil {
 		logrus.Error(err)
@@ -74,7 +98,6 @@ func (m *URLInMemoryRepo) ReadFileToMemoryURL() error {
 	}
 	return nil
 }
-
 func (m *URLInMemoryRepo) StoreURLSInDB(originalURL, shortURL string) error {
 	m.origToShortURL[originalURL] = shortURL
 	m.shortToOrigURL[shortURL] = originalURL
@@ -104,34 +127,6 @@ func (m *URLInMemoryRepo) StoreURLSInDB(originalURL, shortURL string) error {
 	}
 	return nil
 }
-
-func (m *URLInMemoryRepo) SaveBatchToFile() error {
-	startTime := time.Now() // Засекаем время начала операции
-	file, err := os.OpenFile(m.storageFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		logrus.Error(err)
-		return err
-	}
-	defer file.Close()
-	writer := bufio.NewWriter(file)
-	encoder := json.NewEncoder(writer)
-	for _, v := range m.batchBuffer {
-		err = encoder.Encode(v)
-		if err != nil {
-			return err
-		}
-	}
-	err = writer.Flush() // Запись оставшихся данных из буфера в файл
-	if err != nil {
-		return err
-	}
-
-	elapsedTime := time.Since(startTime) // Вычисляем затраченное время
-	logrus.Infof("%d URL saved in %v", m.batchCounter, elapsedTime)
-	m.batchBuffer = make([]URLInFileRepo, 0, m.batchSize)
-	return nil
-}
-
 func (m *URLInMemoryRepo) GetOriginalURLFromDB(shortURL string) (string, error) {
 	originalURL, exists := m.shortToOrigURL[shortURL]
 	if !exists {
@@ -139,7 +134,6 @@ func (m *URLInMemoryRepo) GetOriginalURLFromDB(shortURL string) (string, error) 
 	}
 	return originalURL, nil
 }
-
 func (m *URLInMemoryRepo) GetShortURLFromDB(originalURL string) (string, error) {
 	shortURL, exists := m.origToShortURL[originalURL]
 	if !exists {
