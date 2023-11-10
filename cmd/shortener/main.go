@@ -54,6 +54,8 @@ func main() {
 	router.HandleFunc("/ping", myHandler.PingDB)
 	router.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
 	router.HandleFunc("/api/shorten", myHandler.JSONURL).Methods("POST")
+	router.HandleFunc("/api/shorten/batch", myHandler.BatchSave).Methods("POST")
+
 	server := &http.Server{Addr: cfg.EnvServAdr, Handler: loggerRouter}
 
 	logrus.Info("Starting server on: ", cfg.EnvServAdr)

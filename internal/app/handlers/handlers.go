@@ -29,6 +29,14 @@ type URLProcessingResult struct {
 	URL    string `json:"url"`
 	Result string `json:"result"`
 }
+type BatchURLRequest struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+type BatchURLResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
 type compressReader struct {
 	r  io.ReadCloser
 	zr *gzip.Reader
@@ -124,7 +132,6 @@ func (h Handlers) JSONURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dataURL.Result = result
-
 	jsonResult, err := json.Marshal(dataURL)
 	if err == nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -135,6 +142,33 @@ func (h Handlers) JSONURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+func (h Handlers) BatchSave(w http.ResponseWriter, r *http.Request) {
+	var batchURLRequests []BatchURLRequest
+	var batchURLResponses []BatchURLResponse
+	if err := json.NewDecoder(r.Body).Decode(&batchURLRequests); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+	for _, value := range batchURLRequests {
+		shortURL, err := h.service.GetShortURL(value.OriginalURL)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		batchURLResponses = append(batchURLResponses, BatchURLResponse{CorrelationID: value.CorrelationID, ShortURL: shortURL})
+	}
+	jsonResult, err := json.Marshal(batchURLResponses)
+	if err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(jsonResult)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+}
+
 func (h Handlers) PingDB(w http.ResponseWriter, r *http.Request) {
 	if err := h.DB.Ping(context.Background()); err != nil {
 		logrus.Error(err)
