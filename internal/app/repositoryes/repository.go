@@ -98,7 +98,7 @@ func (m *URLInMemoryRepo) readFileToMemoryURL() error {
 	}
 	return nil
 }
-func (m *URLInMemoryRepo) StoreURLSInDB(originalURL, shortURL string) error {
+func (m *URLInMemoryRepo) StoreURLInDB(originalURL, shortURL string) error {
 	m.origToShortURL[originalURL] = shortURL
 	m.shortToOrigURL[shortURL] = originalURL
 	m.lastUUID++

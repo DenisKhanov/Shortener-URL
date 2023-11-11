@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,11 +30,18 @@ func main() {
 
 	cfg = config.NewConfig()
 	if cfg.EnvDataBase != "" {
-		dbPool, err = pgxpool.New(context.Background(), cfg.EnvDataBase)
+		confPool, err := pgxpool.ParseConfig(cfg.EnvDataBase)
+		if err != nil {
+			log.Fatalf("error parsing config: %v", err)
+		}
+		confPool.MaxConns = 50
+		confPool.MinConns = 10
+		dbPool, err = pgxpool.NewWithConfig(context.Background(), confPool)
 		if err != nil {
 			logrus.Error("Don't connect to DB: ", err)
 			os.Exit(1)
 		}
+
 		defer dbPool.Close()
 		myRepository = repositoryes.NewURLInDBRepo(dbPool)
 	} else {
@@ -43,18 +51,18 @@ func main() {
 	logcfg.RunLoggerConfig(cfg.EnvLogLevel)
 	logrus.Infof("Server started:\nServer addres %s\nBase URL %s\nFile path %s\nDBConfig %s\n", cfg.EnvServAdr, cfg.EnvBaseURL, cfg.EnvStoragePath, cfg.EnvDataBase)
 
-	myService := services.NewServices(myRepository, services.Services{}, cfg.EnvBaseURL)
+	myService := services.NewServices(myRepository, repositoryes.NewURLInDBRepo(dbPool), repositoryes.NewURLInMemoryRepo(cfg.EnvStoragePath), services.Services{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myService, dbPool)
 
 	router := mux.NewRouter()
 	compressRouter := myHandler.MiddlewareCompress(router)
 	loggerRouter := myHandler.MiddlewareLogging(compressRouter)
 
-	router.HandleFunc("/", myHandler.PostURL)
+	router.HandleFunc("/", myHandler.GetShortURL)
 	router.HandleFunc("/ping", myHandler.PingDB)
-	router.HandleFunc("/{id}", myHandler.GetURL).Methods("GET")
-	router.HandleFunc("/api/shorten", myHandler.JSONURL).Methods("POST")
-	router.HandleFunc("/api/shorten/batch", myHandler.BatchSave).Methods("POST")
+	router.HandleFunc("/{id}", myHandler.GetOriginalURL).Methods("GET")
+	router.HandleFunc("/api/shorten", myHandler.GetJSONShortURL).Methods("POST")
+	router.HandleFunc("/api/shorten/batch", myHandler.GetBatchJSONShortURL).Methods("POST")
 
 	server := &http.Server{Addr: cfg.EnvServAdr, Handler: loggerRouter}
 
@@ -78,11 +86,9 @@ func main() {
 	if err = server.Shutdown(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "HTTP server Shutdown: %v\n", err)
 	}
-	if inMemoryRepo, ok := myRepository.(services.URLInMemoryRepository); ok {
-		err = inMemoryRepo.SaveBatchToFile()
-		if err != nil {
-			logrus.Error(err)
-		}
+	if err = myService.URLInMemoryRepository.SaveBatchToFile(); err != nil {
+		logrus.Error(err)
 	}
+
 	logrus.Info("Server exited")
 }

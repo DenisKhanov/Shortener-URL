@@ -259,7 +259,7 @@ func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
 				batchSize:       tt.fields.batchSize,
 				storageFilePath: tt.fields.storageFilePath,
 			}
-			tt.wantErr(t, m.StoreURLSInDB(tt.args.originalURL, tt.args.shortURL), fmt.Sprintf("StoreURLSInDB(%v, %v)", tt.args.originalURL, tt.args.shortURL))
+			tt.wantErr(t, m.StoreURLInDB(tt.args.originalURL, tt.args.shortURL), fmt.Sprintf("StoreURLInDB(%v, %v)", tt.args.originalURL, tt.args.shortURL))
 			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}

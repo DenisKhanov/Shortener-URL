@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestHandlers_PostURL(t *testing.T) {
+func TestHandlers_GetShortURL(t *testing.T) {
 
 	tests := []struct {
 		name             string
@@ -59,7 +59,7 @@ func TestHandlers_PostURL(t *testing.T) {
 			r := httptest.NewRequest("POST", "/", bytes.NewBufferString(tt.inputURL))
 			w := httptest.NewRecorder()
 			handler := Handlers{service: mockService}
-			http.HandlerFunc(handler.PostURL).ServeHTTP(w, r)
+			http.HandlerFunc(handler.GetShortURL).ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedShortURL, w.Body.String())
@@ -67,7 +67,7 @@ func TestHandlers_PostURL(t *testing.T) {
 	}
 }
 
-func TestHandlers_GetURL(t *testing.T) {
+func TestHandlers_GetOriginalURL(t *testing.T) {
 	tests := []struct {
 		name           string
 		shortURL       string
@@ -104,7 +104,7 @@ func TestHandlers_GetURL(t *testing.T) {
 			r := httptest.NewRequest("GET", tt.shortURL, nil)
 			w := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/{id}", handler.GetURL).Methods("GET")
+			router.HandleFunc("/{id}", handler.GetOriginalURL).Methods("GET")
 			router.ServeHTTP(w, r)
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedURL, w.Header().Get("Location"))
@@ -112,7 +112,7 @@ func TestHandlers_GetURL(t *testing.T) {
 	}
 }
 
-func TestHandlers_JsonURL(t *testing.T) {
+func TestHandlers_GetJSONShortURL(t *testing.T) {
 
 	tests := []struct {
 		name           string
@@ -141,7 +141,7 @@ func TestHandlers_JsonURL(t *testing.T) {
 			r := httptest.NewRequest("POST", "/api/shorten", bytes.NewBufferString(tt.inputJSON))
 			w := httptest.NewRecorder()
 			handler := Handlers{service: mockService}
-			http.HandlerFunc(handler.JSONURL).ServeHTTP(w, r)
+			http.HandlerFunc(handler.GetJSONShortURL).ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			var actual, expected map[string]interface{}

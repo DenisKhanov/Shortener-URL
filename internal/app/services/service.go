@@ -3,36 +3,72 @@ package services
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
+	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
 //go:generate mockgen -source=service.go -destination=mocks/service_mock.go -package=mocks
 
 type Repository interface {
-	StoreURLSInDB(originalURL, shortURL string) error
+	StoreURLInDB(originalURL, shortURL string) error
 	GetShortURLFromDB(originalURL string) (string, error)
 	GetOriginalURLFromDB(shortURL string) (string, error)
 }
 type URLInMemoryRepository interface {
-	Repository
 	SaveBatchToFile() error
+}
+type URLInDBRepository interface {
+	GetShortBatchURLFromDB(batchURLRequests []models.URLRequest) (map[string]string, error)
+	StoreBatchURLInDB(batchURLtoStores map[string]string) error
 }
 type Encoder interface {
 	CryptoBase62Encode() string
 }
 
 type Services struct {
-	repository Repository
-	encoder    Encoder
-	baseURL    string
+	repository            Repository
+	URLInDBRepository     URLInDBRepository
+	URLInMemoryRepository URLInMemoryRepository
+	encoder               Encoder
+	baseURL               string
 }
 
-func NewServices(repository Repository, encoder Encoder, baseURL string) *Services {
+func NewServices(repository Repository, URLInDBRepository URLInDBRepository, URLInMemoryRepository URLInMemoryRepository, encoder Encoder, baseURL string) *Services {
 	return &Services{
-		repository: repository,
-		encoder:    encoder,
-		baseURL:    baseURL,
+		repository:            repository,
+		URLInDBRepository:     URLInDBRepository,
+		URLInMemoryRepository: URLInMemoryRepository,
+		encoder:               encoder,
+		baseURL:               baseURL,
 	}
+}
+
+func (s Services) GetBatchJSONShortURL(batchURLRequests []models.URLRequest) ([]models.URLResponse, error) {
+	fmt.Println("Service GetBatchJSONShortURL run")
+	var batchURLtoStores = make(map[string]string, len(batchURLRequests))
+	var batchURLResponses []models.URLResponse
+	shortsURL, err := s.URLInDBRepository.GetShortBatchURLFromDB(batchURLRequests)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	for _, value := range batchURLRequests {
+		if shortURL, ok := shortsURL[value.OriginalURL]; ok {
+			batchURLResponses = append(batchURLResponses, models.URLResponse{CorrelationID: value.CorrelationID, ShortURL: s.baseURL + "/" + shortURL})
+		} else {
+			shortURL = s.encoder.CryptoBase62Encode()
+			batchURLtoStores[shortURL] = value.OriginalURL
+			batchURLResponses = append(batchURLResponses, models.URLResponse{CorrelationID: value.CorrelationID, ShortURL: s.baseURL + "/" + shortURL})
+		}
+	}
+	err = s.URLInDBRepository.StoreBatchURLInDB(batchURLtoStores)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	return batchURLResponses, nil
 }
 
 // GetShortURL returns the short URL
@@ -40,7 +76,7 @@ func (s Services) GetShortURL(url string) (string, error) {
 	shortURL, err := s.repository.GetShortURLFromDB(url)
 	if err != nil {
 		shortURL = s.encoder.CryptoBase62Encode()
-		err = s.repository.StoreURLSInDB(url, shortURL)
+		err = s.repository.StoreURLInDB(url, shortURL)
 		if err != nil {
 			return "", err
 		}
