@@ -26,7 +26,6 @@ func main() {
 		cfg          *config.ENVConfig
 		myRepository services.Repository
 	)
-
 	cfg = config.NewConfig()
 	if cfg.EnvDataBase != "" {
 		dbPool, err = pgxpool.New(context.Background(), cfg.EnvDataBase)
