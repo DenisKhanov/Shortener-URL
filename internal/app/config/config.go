@@ -6,6 +6,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ENVConfig holds configuration settings extracted from environment variables.
+// This struct is used to configure various aspects of the application.
 type ENVConfig struct {
 	EnvServAdr     string `env:"SERVER_ADDRESS"`
 	EnvBaseURL     string `env:"BASE_URL"`
@@ -25,7 +27,7 @@ func NewConfig() *ENVConfig {
 
 	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Set logg level")
 
-	flag.StringVar(&cfg.EnvDataBase, "d", "", "Set PingDB config")
+	flag.StringVar(&cfg.EnvDataBase, "d", "", "Set connect DB config")
 
 	flag.Parse()
 

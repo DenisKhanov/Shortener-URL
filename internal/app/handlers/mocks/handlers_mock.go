@@ -7,6 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	models "github.com/DenisKhanov/shorterURL/internal/app/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -31,6 +32,21 @@ func NewMockService(ctrl *gomock.Controller) *MockService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
+}
+
+// GetBatchJSONShortURL mocks base method.
+func (m *MockService) GetBatchJSONShortURL(batchURLRequests []models.URLRequest) ([]models.URLResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBatchJSONShortURL", batchURLRequests)
+	ret0, _ := ret[0].([]models.URLResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBatchJSONShortURL indicates an expected call of GetBatchJSONShortURL.
+func (mr *MockServiceMockRecorder) GetBatchJSONShortURL(batchURLRequests interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBatchJSONShortURL", reflect.TypeOf((*MockService)(nil).GetBatchJSONShortURL), batchURLRequests)
 }
 
 // GetOriginalURL mocks base method.
