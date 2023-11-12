@@ -4,8 +4,6 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -17,38 +15,28 @@ import (
 	"time"
 )
 
-// Service defines the interface for URL shortening and retrieval operations.
-// It abstracts the logic for shortening URLs, fetching original URLs from shortened ones, and handling batch operations for URL shortening.
-//
 //go:generate mockgen -source=handlers.go -destination=mocks/handlers_mock.go -package=mocks
 type Service interface {
-	// GetShortURL takes original URL and returns its shortened version.
-	// If the URL has already been shortened, it returns the existing shortened URL.
-	// If the URL is new, it generates a new shortened URL.
-	// Returns an error if the URL cannot be shortened or if any internal error occurs.
 	GetShortURL(url string) (string, error)
-	// GetOriginalURL takes a shortened URL and returns the original URL it points to.
-	// If the shortened URL does not exist or is invalid, an error is returned.
-	// Useful for redirecting shortened URLs to their original destinations.
 	GetOriginalURL(shortURL string) (string, error)
-	// GetBatchJSONShortURL takes a slice of models.URLRequest objects, each containing a URL to be shortened,
-	// and returns a slice of models.URLResponse objects, each containing the original and shortened URL.
-	// This method is intended for processing multiple URLs at once, improving efficiency for bulk operations.
-	// Returns an error if any of the URLs cannot be processed or if an internal error occurs.
-	GetBatchJSONShortURL(batchURLRequests []models.URLRequest) ([]models.URLResponse, error)
 }
 
 type Handlers struct {
 	service Service
 	DB      *pgxpool.Pool
 }
-type URLProcessing struct {
-	URL string `json:"url"`
-}
 type URLProcessingResult struct {
+	URL    string `json:"url"`
 	Result string `json:"result"`
 }
-
+type BatchURLRequest struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+type BatchURLResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
 type compressReader struct {
 	r  io.ReadCloser
 	zr *gzip.Reader
@@ -95,14 +83,14 @@ func NewHandlers(service Service, DB *pgxpool.Pool) *Handlers {
 	}
 }
 
-func (h Handlers) GetShortURL(w http.ResponseWriter, r *http.Request) {
+func (h Handlers) PostURL(w http.ResponseWriter, r *http.Request) {
 	linc, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	r.Body.Close()
 	lincString := string(linc)
+	defer r.Body.Close()
 
 	parsedLinc, err := url.Parse(lincString)
 	if err != nil || parsedLinc.Scheme == "" || parsedLinc.Host == "" {
@@ -119,7 +107,7 @@ func (h Handlers) GetShortURL(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(shortURL))
 
 }
-func (h Handlers) GetOriginalURL(w http.ResponseWriter, r *http.Request) {
+func (h Handlers) GetURL(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	shortURL := vars["id"]
 	originURL, err := h.service.GetOriginalURL(shortURL)
@@ -130,22 +118,21 @@ func (h Handlers) GetOriginalURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", originURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
-func (h Handlers) GetJSONShortURL(w http.ResponseWriter, r *http.Request) {
-	var dataURL URLProcessing
-	var dataURLResylt URLProcessingResult
+func (h Handlers) JSONURL(w http.ResponseWriter, r *http.Request) {
+	var dataURL URLProcessingResult
 	if err := json.NewDecoder(r.Body).Decode(&dataURL); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	r.Body.Close()
+	defer r.Body.Close()
 
 	result, err := h.service.GetShortURL(dataURL.URL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	dataURLResylt.Result = result
-	jsonResult, err := json.Marshal(dataURLResylt)
+	dataURL.Result = result
+	jsonResult, err := json.Marshal(dataURL)
 	if err == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -155,18 +142,21 @@ func (h Handlers) GetJSONShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func (h Handlers) GetBatchJSONShortURL(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hendler GetBatchJSONShortURL run")
-	var batchURLRequests []models.URLRequest
+func (h Handlers) BatchSave(w http.ResponseWriter, r *http.Request) {
+	var batchURLRequests []BatchURLRequest
+	var batchURLResponses []BatchURLResponse
 	if err := json.NewDecoder(r.Body).Decode(&batchURLRequests); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	r.Body.Close()
-	batchURLResponses, err := h.service.GetBatchJSONShortURL(batchURLRequests)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	defer r.Body.Close()
+	for _, value := range batchURLRequests {
+		shortURL, err := h.service.GetShortURL(value.OriginalURL)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		batchURLResponses = append(batchURLResponses, BatchURLResponse{CorrelationID: value.CorrelationID, ShortURL: shortURL})
 	}
 	jsonResult, err := json.Marshal(batchURLResponses)
 	if err == nil {
@@ -178,12 +168,21 @@ func (h Handlers) GetBatchJSONShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func (h Handlers) PingDB(w http.ResponseWriter, r *http.Request) {
 	if err := h.DB.Ping(context.Background()); err != nil {
 		logrus.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (u URLProcessingResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Result string `json:"result"`
+	}{
+		Result: u.Result,
+	})
 }
 
 func (sw *sizeTrackingResponseWriter) Write(data []byte) (int, error) {

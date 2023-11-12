@@ -7,7 +7,6 @@ package mocks
 import (
 	reflect "reflect"
 
-	models "github.com/DenisKhanov/shorterURL/internal/app/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -49,21 +48,6 @@ func (mr *MockRepositoryMockRecorder) GetOriginalURLFromDB(shortURL interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOriginalURLFromDB", reflect.TypeOf((*MockRepository)(nil).GetOriginalURLFromDB), shortURL)
 }
 
-// GetShortBatchURLFromDB mocks base method.
-func (m *MockRepository) GetShortBatchURLFromDB(batchURLRequests []models.URLRequest) (map[string]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetShortBatchURLFromDB", batchURLRequests)
-	ret0, _ := ret[0].(map[string]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetShortBatchURLFromDB indicates an expected call of GetShortBatchURLFromDB.
-func (mr *MockRepositoryMockRecorder) GetShortBatchURLFromDB(batchURLRequests interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortBatchURLFromDB", reflect.TypeOf((*MockRepository)(nil).GetShortBatchURLFromDB), batchURLRequests)
-}
-
 // GetShortURLFromDB mocks base method.
 func (m *MockRepository) GetShortURLFromDB(originalURL string) (string, error) {
 	m.ctrl.T.Helper()
@@ -79,32 +63,18 @@ func (mr *MockRepositoryMockRecorder) GetShortURLFromDB(originalURL interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortURLFromDB", reflect.TypeOf((*MockRepository)(nil).GetShortURLFromDB), originalURL)
 }
 
-// StoreBatchURLInDB mocks base method.
-func (m *MockRepository) StoreBatchURLInDB(batchURLtoStores map[string]string) error {
+// StoreURLSInDB mocks base method.
+func (m *MockRepository) StoreURLSInDB(originalURL, shortURL string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreBatchURLInDB", batchURLtoStores)
+	ret := m.ctrl.Call(m, "StoreURLSInDB", originalURL, shortURL)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// StoreBatchURLInDB indicates an expected call of StoreBatchURLInDB.
-func (mr *MockRepositoryMockRecorder) StoreBatchURLInDB(batchURLtoStores interface{}) *gomock.Call {
+// StoreURLSInDB indicates an expected call of StoreURLSInDB.
+func (mr *MockRepositoryMockRecorder) StoreURLSInDB(originalURL, shortURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreBatchURLInDB", reflect.TypeOf((*MockRepository)(nil).StoreBatchURLInDB), batchURLtoStores)
-}
-
-// StoreURLInDB mocks base method.
-func (m *MockRepository) StoreURLInDB(originalURL, shortURL string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreURLInDB", originalURL, shortURL)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// StoreURLInDB indicates an expected call of StoreURLInDB.
-func (mr *MockRepositoryMockRecorder) StoreURLInDB(originalURL, shortURL interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLInDB", reflect.TypeOf((*MockRepository)(nil).StoreURLInDB), originalURL, shortURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLSInDB", reflect.TypeOf((*MockRepository)(nil).StoreURLSInDB), originalURL, shortURL)
 }
 
 // MockURLInMemoryRepository is a mock of URLInMemoryRepository interface.
@@ -130,6 +100,36 @@ func (m *MockURLInMemoryRepository) EXPECT() *MockURLInMemoryRepositoryMockRecor
 	return m.recorder
 }
 
+// GetOriginalURLFromDB mocks base method.
+func (m *MockURLInMemoryRepository) GetOriginalURLFromDB(shortURL string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOriginalURLFromDB", shortURL)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOriginalURLFromDB indicates an expected call of GetOriginalURLFromDB.
+func (mr *MockURLInMemoryRepositoryMockRecorder) GetOriginalURLFromDB(shortURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOriginalURLFromDB", reflect.TypeOf((*MockURLInMemoryRepository)(nil).GetOriginalURLFromDB), shortURL)
+}
+
+// GetShortURLFromDB mocks base method.
+func (m *MockURLInMemoryRepository) GetShortURLFromDB(originalURL string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetShortURLFromDB", originalURL)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetShortURLFromDB indicates an expected call of GetShortURLFromDB.
+func (mr *MockURLInMemoryRepositoryMockRecorder) GetShortURLFromDB(originalURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortURLFromDB", reflect.TypeOf((*MockURLInMemoryRepository)(nil).GetShortURLFromDB), originalURL)
+}
+
 // SaveBatchToFile mocks base method.
 func (m *MockURLInMemoryRepository) SaveBatchToFile() error {
 	m.ctrl.T.Helper()
@@ -142,6 +142,20 @@ func (m *MockURLInMemoryRepository) SaveBatchToFile() error {
 func (mr *MockURLInMemoryRepositoryMockRecorder) SaveBatchToFile() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchToFile", reflect.TypeOf((*MockURLInMemoryRepository)(nil).SaveBatchToFile))
+}
+
+// StoreURLSInDB mocks base method.
+func (m *MockURLInMemoryRepository) StoreURLSInDB(originalURL, shortURL string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreURLSInDB", originalURL, shortURL)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreURLSInDB indicates an expected call of StoreURLSInDB.
+func (mr *MockURLInMemoryRepositoryMockRecorder) StoreURLSInDB(originalURL, shortURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLSInDB", reflect.TypeOf((*MockURLInMemoryRepository)(nil).StoreURLSInDB), originalURL, shortURL)
 }
 
 // MockEncoder is a mock of Encoder interface.
