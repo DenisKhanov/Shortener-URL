@@ -89,7 +89,8 @@ func main() {
 	}
 	//If the server shutting down, save batch to file
 	if repositoryReciver {
-		if err = repositoryes.NewURLInMemoryRepo(cfg.EnvStoragePath).SaveBatchToFile(); err != nil {
+		err = myRepository.(services.URLInMemoryRepository).SaveBatchToFile()
+		if err != nil {
 			logrus.Error(err)
 		}
 	}

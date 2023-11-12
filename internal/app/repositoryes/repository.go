@@ -89,7 +89,6 @@ func (m *URLInMemoryRepo) StoreURLInDB(originalURL, shortURL string) error {
 	}
 	m.batchBuffer = append(m.batchBuffer, record)
 	m.batchCounter++
-
 	if m.batchCounter >= m.batchSize {
 		err := m.SaveBatchToFile()
 		if err != nil {

@@ -40,6 +40,9 @@ type ShortURLServices struct {
 	encoder    Encoder
 	baseURL    string
 }
+type URLInMemoryRepository interface {
+	SaveBatchToFile() error
+}
 
 func NewShortURLServices(repository Repository, encoder Encoder, baseURL string) *ShortURLServices {
 	return &ShortURLServices{
