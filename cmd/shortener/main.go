@@ -87,6 +87,7 @@ func main() {
 	if err = server.Shutdown(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "HTTP server Shutdown: %v\n", err)
 	}
+	//If the server shutting down, save batch to file
 	if repositoryReciver {
 		if err = repositoryes.NewURLInMemoryRepo(cfg.EnvStoragePath).SaveBatchToFile(); err != nil {
 			logrus.Error(err)
