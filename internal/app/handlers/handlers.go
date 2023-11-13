@@ -77,7 +77,7 @@ func (h Handlers) GetShortURL(c *gin.Context) {
 	}
 	shortURL, err := h.service.GetShortURL(lincString)
 	if err != nil {
-		if errors.Is(err, models.URLFoundError) {
+		if errors.Is(err, models.ErrURLFound) {
 			c.String(http.StatusConflict, shortURL)
 			return
 		}
@@ -105,7 +105,7 @@ func (h Handlers) GetJSONShortURL(c *gin.Context) {
 	}
 	result, err := h.service.GetShortURL(dataURL.URL)
 	if err != nil {
-		if errors.Is(err, models.URLFoundError) {
+		if errors.Is(err, models.ErrURLFound) {
 			c.JSON(http.StatusConflict, gin.H{"result": result})
 			return
 		}

@@ -154,9 +154,9 @@ func TestHandlers_GetJSONShortURL(t *testing.T) {
 			inputJSON:      `{"url": "http://original.url"}`,
 			expectedJSON:   `{"result": "http://localhost:8080/94UUE"}`,
 			expectedStatus: http.StatusConflict,
-			expectedError:  models.URLFoundError,
+			expectedError:  models.ErrURLFound,
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetShortURL("http://original.url").Return("http://localhost:8080/94UUE", models.URLFoundError).AnyTimes()
+				mockService.EXPECT().GetShortURL("http://original.url").Return("http://localhost:8080/94UUE", models.ErrURLFound).AnyTimes()
 			},
 		},
 	}

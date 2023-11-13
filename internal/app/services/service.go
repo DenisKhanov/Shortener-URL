@@ -89,7 +89,7 @@ func (s ShortURLServices) GetShortURL(url string) (string, error) {
 		}
 		return s.baseURL + "/" + shortURL, nil
 	}
-	return s.baseURL + "/" + shortURL, models.URLFoundError
+	return s.baseURL + "/" + shortURL, models.ErrURLFound
 }
 
 // GetOriginalURL returns the origin URL for the given short URL
