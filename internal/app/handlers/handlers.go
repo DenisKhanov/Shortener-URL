@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -41,9 +42,6 @@ type Handlers struct {
 }
 type URLProcessing struct {
 	URL string `json:"url"`
-}
-type URLProcessingResult struct {
-	Result string `json:"result"`
 }
 type responseData struct {
 	status int
@@ -90,7 +88,6 @@ func (h Handlers) GetShortURL(c *gin.Context) {
 }
 func (h Handlers) GetOriginalURL(c *gin.Context) {
 	shortURL := c.Param("id")
-	fmt.Println(shortURL + "Тут должен быть урл")
 	originURL, err := h.service.GetOriginalURL(shortURL)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -175,5 +172,41 @@ func (h Handlers) MiddlewareLogging() gin.HandlerFunc {
 			"duration": duration,
 			"size":     size,
 		}).Info("Обработан запрос")
+	}
+}
+
+type compressWriter struct {
+	gin.ResponseWriter
+	Writer *gzip.Writer
+}
+
+func (c *compressWriter) Write(data []byte) (int, error) {
+	return c.Writer.Write(data)
+}
+func (c *compressWriter) Close() error {
+	return c.Writer.Close()
+}
+func (c *compressWriter) WriteString(s string) (int, error) {
+	return c.Writer.Write([]byte(s))
+}
+func (h Handlers) MiddlewareCompress() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
+			gz := gzip.NewWriter(c.Writer)
+			defer gz.Close()
+			c.Writer = &compressWriter{Writer: gz, ResponseWriter: c.Writer}
+			c.Header("Content-Encoding", "gzip")
+		}
+		// Проверяем, сжат ли запрос
+		if strings.Contains(c.GetHeader("Content-Encoding"), "gzip") {
+			reader, err := gzip.NewReader(c.Request.Body)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid gzip body"})
+				return
+			}
+			defer reader.Close()
+			c.Request.Body = reader
+		}
+		c.Next()
 	}
 }

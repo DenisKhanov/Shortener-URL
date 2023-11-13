@@ -9,7 +9,6 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/logcfg"
 	"github.com/DenisKhanov/shorterURL/internal/app/repositoryes"
 	"github.com/DenisKhanov/shorterURL/internal/app/services"
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
@@ -56,10 +55,10 @@ func main() {
 	myShorURLService := services.NewShortURLServices(myRepository, services.ShortURLServices{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
+	router := gin.Default()
 	router.Use(myHandler.MiddlewareLogging())
-	router.Use(gzip.Gzip(gzip.BestSpeed))
+	router.Use(myHandler.MiddlewareCompress())
+	//router.Use(gzip.Gzip(gzip.BestSpeed))
 
 	router.POST("/", myHandler.GetShortURL)
 	router.GET("/ping", myHandler.PingDB)
