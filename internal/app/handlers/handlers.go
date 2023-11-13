@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -89,6 +90,7 @@ func (h Handlers) GetShortURL(c *gin.Context) {
 }
 func (h Handlers) GetOriginalURL(c *gin.Context) {
 	shortURL := c.Param("id")
+	fmt.Println(shortURL + "Тут должен быть урл")
 	originURL, err := h.service.GetOriginalURL(shortURL)
 	if err != nil {
 		c.Status(http.StatusBadRequest)

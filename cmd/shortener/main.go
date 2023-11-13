@@ -63,7 +63,7 @@ func main() {
 
 	router.POST("/", myHandler.GetShortURL)
 	router.GET("/ping", myHandler.PingDB)
-	router.GET("/{id}", myHandler.GetOriginalURL)
+	router.GET("/:id", myHandler.GetOriginalURL)
 	router.POST("/api/shorten", myHandler.GetJSONShortURL)
 	router.POST("/api/shorten/batch", myHandler.GetBatchJSONShortURL)
 
