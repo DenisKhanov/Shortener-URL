@@ -107,43 +107,6 @@ func (mr *MockRepositoryMockRecorder) StoreURLInDB(originalURL, shortURL interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLInDB", reflect.TypeOf((*MockRepository)(nil).StoreURLInDB), originalURL, shortURL)
 }
 
-// MockURLInMemoryRepository is a mock of URLInMemoryRepository interface.
-type MockURLInMemoryRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockURLInMemoryRepositoryMockRecorder
-}
-
-// MockURLInMemoryRepositoryMockRecorder is the mock recorder for MockURLInMemoryRepository.
-type MockURLInMemoryRepositoryMockRecorder struct {
-	mock *MockURLInMemoryRepository
-}
-
-// NewMockURLInMemoryRepository creates a new mock instance.
-func NewMockURLInMemoryRepository(ctrl *gomock.Controller) *MockURLInMemoryRepository {
-	mock := &MockURLInMemoryRepository{ctrl: ctrl}
-	mock.recorder = &MockURLInMemoryRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockURLInMemoryRepository) EXPECT() *MockURLInMemoryRepositoryMockRecorder {
-	return m.recorder
-}
-
-// SaveBatchToFile mocks base method.
-func (m *MockURLInMemoryRepository) SaveBatchToFile() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveBatchToFile")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveBatchToFile indicates an expected call of SaveBatchToFile.
-func (mr *MockURLInMemoryRepositoryMockRecorder) SaveBatchToFile() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchToFile", reflect.TypeOf((*MockURLInMemoryRepository)(nil).SaveBatchToFile))
-}
-
 // MockEncoder is a mock of Encoder interface.
 type MockEncoder struct {
 	ctrl     *gomock.Controller
@@ -179,4 +142,41 @@ func (m *MockEncoder) CryptoBase62Encode() string {
 func (mr *MockEncoderMockRecorder) CryptoBase62Encode() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoBase62Encode", reflect.TypeOf((*MockEncoder)(nil).CryptoBase62Encode))
+}
+
+// MockURLInMemoryRepository is a mock of URLInMemoryRepository interface.
+type MockURLInMemoryRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockURLInMemoryRepositoryMockRecorder
+}
+
+// MockURLInMemoryRepositoryMockRecorder is the mock recorder for MockURLInMemoryRepository.
+type MockURLInMemoryRepositoryMockRecorder struct {
+	mock *MockURLInMemoryRepository
+}
+
+// NewMockURLInMemoryRepository creates a new mock instance.
+func NewMockURLInMemoryRepository(ctrl *gomock.Controller) *MockURLInMemoryRepository {
+	mock := &MockURLInMemoryRepository{ctrl: ctrl}
+	mock.recorder = &MockURLInMemoryRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockURLInMemoryRepository) EXPECT() *MockURLInMemoryRepositoryMockRecorder {
+	return m.recorder
+}
+
+// SaveBatchToFile mocks base method.
+func (m *MockURLInMemoryRepository) SaveBatchToFile() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveBatchToFile")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveBatchToFile indicates an expected call of SaveBatchToFile.
+func (mr *MockURLInMemoryRepositoryMockRecorder) SaveBatchToFile() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchToFile", reflect.TypeOf((*MockURLInMemoryRepository)(nil).SaveBatchToFile))
 }

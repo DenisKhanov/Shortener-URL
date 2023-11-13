@@ -70,12 +70,18 @@ func TestServices_GetShortURL(t *testing.T) {
 			tt.mockSetup(mockRepo, mockEncoder)
 			service := ShortURLServices{repository: mockRepo, encoder: mockEncoder, baseURL: "http://localhost:8080"}
 			result, err := service.GetShortURL(tt.originalURL)
-			if tt.name == "ShortURL not found in repository "+
-				"and failed to save" {
-				assert.EqualError(t, err, "error saving shortUrl")
+			if tt.name == "ShortURL found in repository" {
+				assert.Equal(t, tt.expectedShortURL, result)
+				assert.EqualError(t, err, "short URL found in database")
 			} else {
-				assert.NoError(t, err)
+				if tt.name == "ShortURL not found in repository "+
+					"and failed to save" {
+					assert.EqualError(t, err, "error saving shortUrl")
+				} else {
+					assert.NoError(t, err)
+				}
 			}
+
 			assert.Equal(t, tt.expectedShortURL, result)
 		})
 	}

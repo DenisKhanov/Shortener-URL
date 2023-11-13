@@ -34,8 +34,8 @@ func (d *URLInDBRepo) CreateBDTable() {
 	sqlQuery := `
 		CREATE TABLE IF NOT EXISTS shortedurl (
 		"id" SERIAL PRIMARY KEY,
-		"shorturl" VARCHAR(250) NOT NULL UNIQUE,
-		"originalurl" VARCHAR(4096) NOT NULL
+		"shorturl" VARCHAR(250) NOT NULL,
+		"originalurl" VARCHAR(4096) NOT NULL UNIQUE
 	)`
 	_, err := d.DB.Exec(ctx, sqlQuery)
 	if err != nil {
@@ -45,7 +45,7 @@ func (d *URLInDBRepo) CreateBDTable() {
 }
 func (d *URLInDBRepo) StoreURLInDB(originalURL, shortURL string) error {
 	ctx := context.Background()
-	const sqlQuery = `INSERT INTO shortedurl (originalurl, shorturl) VALUES ($1, $2) ON CONFLICT (shorturl) DO NOTHING`
+	const sqlQuery = `INSERT INTO shortedurl (originalurl, shorturl) VALUES ($1, $2) ON CONFLICT (originalurl) DO NOTHING`
 	_, err := d.DB.Exec(ctx, sqlQuery, originalURL, shortURL)
 	if err != nil {
 		logrus.Error("url don't save in database ", err)
@@ -60,7 +60,7 @@ func (d *URLInDBRepo) StoreBatchURLInDB(batchURLtoStores map[string]string) erro
 		return err
 	}
 	fmt.Println(2)
-	const sqlQuery = `INSERT INTO shortedurl (originalurl, shorturl) VALUES ($1, $2) ON CONFLICT (shorturl) DO NOTHING`
+	const sqlQuery = `INSERT INTO shortedurl (originalurl, shorturl) VALUES ($1, $2) ON CONFLICT (originalurl) DO NOTHING`
 	_, err = tx.Prepare(ctx, "store_batch_url", sqlQuery)
 	if err != nil {
 		return err
@@ -109,7 +109,6 @@ func (d *URLInDBRepo) GetShortURLFromDB(originalURL string) (string, error) {
 func (d *URLInDBRepo) GetShortBatchURLFromDB(batchURLRequests []models.URLRequest) (map[string]string, error) {
 	var shortsURL = make(map[string]string, len(batchURLRequests))
 	var shortURL string
-	fmt.Println("Repository GetShortBatchURLFromDB run")
 	ctx := context.Background()
 	if d.DB == nil {
 		fmt.Println("Repository not pool")

@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/DenisKhanov/shorterURL/internal/app/handlers/mocks"
+	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -52,14 +53,22 @@ func TestHandlers_GetShortURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Создание Gin контекста
+			gin.SetMode(gin.TestMode)
+			r := gin.Default()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockService := mocks.NewMockService(ctrl)
 			tt.mockSetup(mockService)
-			r := httptest.NewRequest("POST", "/", bytes.NewBufferString(tt.inputURL))
-			w := httptest.NewRecorder()
 			handler := Handlers{service: mockService}
-			http.HandlerFunc(handler.GetShortURL).ServeHTTP(w, r)
+			r.POST("/", handler.GetShortURL)
+
+			// Создание HTTP запроса и рекордера
+			req := httptest.NewRequest("POST", "/", bytes.NewBufferString(tt.inputURL))
+			w := httptest.NewRecorder()
+
+			// Выполнение запроса через Gin
+			r.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedShortURL, w.Body.String())
@@ -100,12 +109,21 @@ func TestHandlers_GetOriginalURL(t *testing.T) {
 			defer ctrl.Finish()
 			mockService := mocks.NewMockService(ctrl)
 			tt.mockSetup(mockService)
+
+			// Создание Gin роутера
+			gin.SetMode(gin.TestMode)
+			router := gin.Default()
 			handler := Handlers{service: mockService}
-			r := httptest.NewRequest("GET", tt.shortURL, nil)
+			router.GET("/:id", handler.GetOriginalURL)
+
+			// Создание HTTP запроса и рекордера
+			req := httptest.NewRequest("GET", tt.shortURL, nil)
 			w := httptest.NewRecorder()
-			router := mux.NewRouter()
-			router.HandleFunc("/{id}", handler.GetOriginalURL).Methods("GET")
-			router.ServeHTTP(w, r)
+
+			// Выполнение запроса через Gin
+			router.ServeHTTP(w, req)
+
+			// Проверки
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedURL, w.Header().Get("Location"))
 		})
@@ -119,10 +137,11 @@ func TestHandlers_GetJSONShortURL(t *testing.T) {
 		inputJSON      string
 		expectedJSON   string
 		expectedStatus int
+		expectedError  error
 		mockSetup      func(mockService *mocks.MockService)
 	}{
 		{
-			name:           "POST Valid URL",
+			name:           "POST Valid URL and shortURL not found in database",
 			inputJSON:      `{"url": "http://original.url"}`,
 			expectedJSON:   `{"result": "http://localhost:8080/94UUE"}`,
 			expectedStatus: http.StatusCreated,
@@ -130,19 +149,38 @@ func TestHandlers_GetJSONShortURL(t *testing.T) {
 				mockService.EXPECT().GetShortURL("http://original.url").Return("http://localhost:8080/94UUE", nil).AnyTimes()
 			},
 		},
+		{
+			name:           "POST Valid URL and shortURL found in database",
+			inputJSON:      `{"url": "http://original.url"}`,
+			expectedJSON:   `{"result": "http://localhost:8080/94UUE"}`,
+			expectedStatus: http.StatusConflict,
+			expectedError:  models.URLFoundError,
+			mockSetup: func(mockService *mocks.MockService) {
+				mockService.EXPECT().GetShortURL("http://original.url").Return("http://localhost:8080/94UUE", models.URLFoundError).AnyTimes()
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Создание Gin контекста
+			gin.SetMode(gin.TestMode)
+			r := gin.Default()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockService := mocks.NewMockService(ctrl)
 			tt.mockSetup(mockService)
-			r := httptest.NewRequest("POST", "/api/shorten", bytes.NewBufferString(tt.inputJSON))
-			w := httptest.NewRecorder()
 			handler := Handlers{service: mockService}
-			http.HandlerFunc(handler.GetJSONShortURL).ServeHTTP(w, r)
+			r.POST("/api/shorten", handler.GetJSONShortURL)
 
+			// Создание HTTP запроса и рекордера
+			req := httptest.NewRequest("POST", "/api/shorten", bytes.NewBufferString(tt.inputJSON))
+			w := httptest.NewRecorder()
+
+			// Выполнение запроса через Gin
+			r.ServeHTTP(w, req)
+
+			// Проверки остаются теми же
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			var actual, expected map[string]interface{}
 			json.Unmarshal(w.Body.Bytes(), &actual)

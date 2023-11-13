@@ -9,7 +9,8 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/logcfg"
 	"github.com/DenisKhanov/shorterURL/internal/app/repositoryes"
 	"github.com/DenisKhanov/shorterURL/internal/app/services"
-	"github.com/gorilla/mux"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"log"
@@ -55,22 +56,22 @@ func main() {
 	myShorURLService := services.NewShortURLServices(myRepository, services.ShortURLServices{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
-	router := mux.NewRouter()
-	compressRouter := myHandler.MiddlewareCompress(router)
-	loggerRouter := myHandler.MiddlewareLogging(compressRouter)
+	router := gin.Default()
+	router.Use(myHandler.MiddlewareLogging())
+	router.Use(gzip.Gzip(gzip.BestSpeed))
 
-	router.HandleFunc("/", myHandler.GetShortURL)
-	router.HandleFunc("/ping", myHandler.PingDB)
-	router.HandleFunc("/{id}", myHandler.GetOriginalURL).Methods("GET")
-	router.HandleFunc("/api/shorten", myHandler.GetJSONShortURL).Methods("POST")
-	router.HandleFunc("/api/shorten/batch", myHandler.GetBatchJSONShortURL).Methods("POST")
+	router.POST("/", myHandler.GetShortURL)
+	router.GET("/ping", myHandler.PingDB)
+	router.GET("/{id}", myHandler.GetOriginalURL)
+	router.POST("/api/shorten", myHandler.GetJSONShortURL)
+	router.POST("/api/shorten/batch", myHandler.GetBatchJSONShortURL)
 
-	server := &http.Server{Addr: cfg.EnvServAdr, Handler: loggerRouter}
+	server := &http.Server{Addr: cfg.EnvServAdr, Handler: router}
 
 	logrus.Info("Starting server on: ", cfg.EnvServAdr)
 
 	go func() {
-		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		if err = server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			logrus.Error(err)
 		}
 	}()
