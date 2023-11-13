@@ -56,7 +56,7 @@ func main() {
 	myShorURLService := services.NewShortURLServices(myRepository, services.ShortURLServices{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
-	router := gin.Default()
+	router := gin.New()
 	router.Use(myHandler.MiddlewareLogging())
 	router.Use(gzip.Gzip(gzip.BestSpeed))
 

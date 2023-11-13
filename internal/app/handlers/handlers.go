@@ -1,19 +1,15 @@
 package handlers
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
-	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -178,37 +174,4 @@ func (h Handlers) MiddlewareLogging() gin.HandlerFunc {
 			"size":     size,
 		}).Info("Обработан запрос")
 	}
-}
-
-type gzipWriter struct {
-	http.ResponseWriter
-	Writer io.Writer
-}
-
-func (lw gzipWriter) Write(b []byte) (int, error) {
-	return lw.Writer.Write(b)
-}
-func (h Handlers) MiddlewareCompressing(ha http.Handler) http.Handler {
-	conpressFn := func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			ha.ServeHTTP(w, r)
-			return
-		}
-		contentType := r.Header.Get("Content-Type")
-		for _, v := range typeArray {
-			fmt.Println(v)
-			if strings.Contains(contentType, v) {
-				gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-				defer gz.Close()
-				if err != nil {
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-				w.Header().Set("Content-Encoding", "gzip")
-				ha.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
-			}
-		}
-		ha.ServeHTTP(w, r)
-	}
-	return http.HandlerFunc(conpressFn)
 }
