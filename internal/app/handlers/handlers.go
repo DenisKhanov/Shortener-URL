@@ -24,16 +24,16 @@ type Service interface {
 	// If the URL has already been shortened, it returns the existing shortened URL.
 	// If the URL is new, it generates a new shortened URL.
 	// Returns an error if the URL cannot be shortened or if any internal error occurs.
-	GetShortURL(url string) (string, error)
+	GetShortURL(ctx context.Context, url string) (string, error)
 	// GetOriginalURL takes a shortened URL and returns the original URL it points to.
 	// If the shortened URL does not exist or is invalid, an error is returned.
 	// Useful for redirecting shortened URLs to their original destinations.
-	GetOriginalURL(shortURL string) (string, error)
+	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
 	// GetBatchJSONShortURL takes a slice of models.URLRequest objects, each containing a URL to be shortened,
 	// and returns a slice of models.URLResponse objects, each containing the original and shortened URL.
 	// This method is intended for processing multiple URLs at once, improving efficiency for bulk operations.
 	// Returns an error if any of the URLs cannot be processed or if an internal error occurs.
-	GetBatchJSONShortURL(batchURLRequests []models.URLRequest) ([]models.URLResponse, error)
+	GetBatchJSONShortURL(ctx context.Context, batchURLRequests []models.URLRequest) ([]models.URLResponse, error)
 }
 
 type Handlers struct {
@@ -62,6 +62,8 @@ func NewHandlers(service Service, DB *pgxpool.Pool) *Handlers {
 }
 
 func (h Handlers) GetShortURL(c *gin.Context) {
+	ctx, cancel := context.WithCancel(c.Request.Context())
+	defer cancel()
 	linc, err := c.GetRawData()
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -74,7 +76,7 @@ func (h Handlers) GetShortURL(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	shortURL, err := h.service.GetShortURL(lincString)
+	shortURL, err := h.service.GetShortURL(ctx, lincString)
 	if err != nil {
 		if errors.Is(err, models.ErrURLFound) {
 			c.String(http.StatusConflict, shortURL)
@@ -87,8 +89,10 @@ func (h Handlers) GetShortURL(c *gin.Context) {
 
 }
 func (h Handlers) GetOriginalURL(c *gin.Context) {
+	ctx, cancel := context.WithCancel(c.Request.Context())
+	defer cancel()
 	shortURL := c.Param("id")
-	originURL, err := h.service.GetOriginalURL(shortURL)
+	originURL, err := h.service.GetOriginalURL(ctx, shortURL)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
@@ -97,12 +101,14 @@ func (h Handlers) GetOriginalURL(c *gin.Context) {
 	c.Status(http.StatusTemporaryRedirect)
 }
 func (h Handlers) GetJSONShortURL(c *gin.Context) {
+	ctx, cancel := context.WithCancel(c.Request.Context())
+	defer cancel()
 	var dataURL URLProcessing
 	if err := c.ShouldBindJSON(&dataURL); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	result, err := h.service.GetShortURL(dataURL.URL)
+	result, err := h.service.GetShortURL(ctx, dataURL.URL)
 	if err != nil {
 		if errors.Is(err, models.ErrURLFound) {
 			c.JSON(http.StatusConflict, gin.H{"result": result})
@@ -114,12 +120,14 @@ func (h Handlers) GetJSONShortURL(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"result": result})
 }
 func (h Handlers) GetBatchJSONShortURL(c *gin.Context) {
+	ctx, cancel := context.WithCancel(c.Request.Context())
+	defer cancel()
 	var batchURLRequests []models.URLRequest
 	if err := c.ShouldBindJSON(&batchURLRequests); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	batchURLResponses, err := h.service.GetBatchJSONShortURL(batchURLRequests)
+	batchURLResponses, err := h.service.GetBatchJSONShortURL(ctx, batchURLRequests)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return

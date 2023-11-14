@@ -43,8 +43,7 @@ func (d *URLInDBRepo) CreateBDTable() {
 	}
 	logrus.Info("Successfully created table shortedurl")
 }
-func (d *URLInDBRepo) StoreURLInDB(originalURL, shortURL string) error {
-	ctx := context.Background()
+func (d *URLInDBRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
 	const sqlQuery = `INSERT INTO shortedurl (originalurl, shorturl) VALUES ($1, $2) ON CONFLICT (originalurl) DO NOTHING`
 	_, err := d.DB.Exec(ctx, sqlQuery, originalURL, shortURL)
 	if err != nil {
@@ -53,8 +52,7 @@ func (d *URLInDBRepo) StoreURLInDB(originalURL, shortURL string) error {
 	}
 	return nil
 }
-func (d *URLInDBRepo) StoreBatchURLInDB(batchURLtoStores map[string]string) error {
-	ctx := context.Background()
+func (d *URLInDBRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
 	tx, err := d.DB.Begin(ctx)
 	if err != nil {
 		return err
@@ -75,8 +73,7 @@ func (d *URLInDBRepo) StoreBatchURLInDB(batchURLtoStores map[string]string) erro
 	}
 	return tx.Commit(ctx)
 }
-func (d *URLInDBRepo) GetOriginalURLFromDB(shortURL string) (string, error) {
-	ctx := context.Background()
+func (d *URLInDBRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
 	const selectQuery = `SELECT originalurl FROM shortedurl WHERE shorturl = $1`
 	var originalURL string
 	err := d.DB.QueryRow(ctx, selectQuery, shortURL).Scan(&originalURL)
@@ -90,9 +87,7 @@ func (d *URLInDBRepo) GetOriginalURLFromDB(shortURL string) (string, error) {
 	}
 	return originalURL, nil
 }
-func (d *URLInDBRepo) GetShortURLFromDB(originalURL string) (string, error) {
-	ctx := context.Background()
-
+func (d *URLInDBRepo) GetShortURLFromDB(ctx context.Context, originalURL string) (string, error) {
 	const selectQuery = `SELECT shorturl FROM shortedurl WHERE originalurl = $1`
 	var shortURL string
 	err := d.DB.QueryRow(ctx, selectQuery, originalURL).Scan(&shortURL)
@@ -106,10 +101,9 @@ func (d *URLInDBRepo) GetShortURLFromDB(originalURL string) (string, error) {
 	}
 	return shortURL, nil
 }
-func (d *URLInDBRepo) GetShortBatchURLFromDB(batchURLRequests []models.URLRequest) (map[string]string, error) {
+func (d *URLInDBRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
 	var shortsURL = make(map[string]string, len(batchURLRequests))
 	var shortURL string
-	ctx := context.Background()
 	if d.DB == nil {
 		fmt.Println("Repository not pool")
 	}

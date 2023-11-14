@@ -2,6 +2,7 @@ package repositoryes
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -77,7 +78,7 @@ func (m *URLInMemoryRepo) readFileToMemoryURL() error {
 	}
 	return nil
 }
-func (m *URLInMemoryRepo) StoreURLInDB(originalURL, shortURL string) error {
+func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
 	m.origToShortURL[originalURL] = shortURL
 	m.shortToOrigURL[shortURL] = originalURL
 	m.lastUUID++
@@ -105,14 +106,14 @@ func (m *URLInMemoryRepo) StoreURLInDB(originalURL, shortURL string) error {
 	}
 	return nil
 }
-func (m *URLInMemoryRepo) GetOriginalURLFromDB(shortURL string) (string, error) {
+func (m *URLInMemoryRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
 	originalURL, exists := m.shortToOrigURL[shortURL]
 	if !exists {
 		return "", errors.New("original URL not found")
 	}
 	return originalURL, nil
 }
-func (m *URLInMemoryRepo) GetShortURLFromDB(originalURL string) (string, error) {
+func (m *URLInMemoryRepo) GetShortURLFromDB(ctx context.Context, originalURL string) (string, error) {
 	shortURL, exists := m.origToShortURL[originalURL]
 	if !exists {
 		return "", errors.New("short URL not found")
@@ -147,16 +148,18 @@ func (m *URLInMemoryRepo) SaveBatchToFile() error {
 	m.batchBuffer = make([]URLInFileRepo, 0, m.batchSize)
 	return nil
 }
-func (m *URLInMemoryRepo) StoreBatchURLInDB(batchURLtoStores map[string]string) error {
+func (m *URLInMemoryRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
+	saveCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 	for shortURL, originalURL := range batchURLtoStores {
-		if err := m.StoreURLInDB(originalURL, shortURL); err != nil {
+		if err := m.StoreURLInDB(saveCtx, originalURL, shortURL); err != nil {
 			fmt.Println("Error saving to memory")
 			return err
 		}
 	}
 	return nil
 }
-func (m *URLInMemoryRepo) GetShortBatchURLFromDB(batchURLRequests []models.URLRequest) (map[string]string, error) {
+func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
 	var shortsURL = make(map[string]string, len(batchURLRequests))
 
 	for _, request := range batchURLRequests {

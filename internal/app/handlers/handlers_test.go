@@ -29,7 +29,7 @@ func TestHandlers_GetShortURL(t *testing.T) {
 			expectedShortURL: "94UUE",
 			expectedStatus:   http.StatusCreated,
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetShortURL("http://original.url").Return("94UUE", nil).AnyTimes()
+				mockService.EXPECT().GetShortURL(gomock.Any(), "http://original.url").Return("94UUE", nil).AnyTimes()
 			},
 		},
 		{
@@ -38,7 +38,7 @@ func TestHandlers_GetShortURL(t *testing.T) {
 			expectedShortURL: "",
 			expectedStatus:   http.StatusBadRequest,
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetShortURL("original.url").Return("", nil).AnyTimes()
+				mockService.EXPECT().GetShortURL(gomock.Any(), "original.url").Return("", nil).AnyTimes()
 			},
 		}, {
 			name:             "POST service get error",
@@ -46,7 +46,7 @@ func TestHandlers_GetShortURL(t *testing.T) {
 			expectedShortURL: "",
 			expectedStatus:   http.StatusBadRequest,
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetShortURL("http://original.url").Return("", errors.New("some error")).AnyTimes()
+				mockService.EXPECT().GetShortURL(gomock.Any(), "http://original.url").Return("", errors.New("some error")).AnyTimes()
 			},
 		},
 	}
@@ -90,7 +90,7 @@ func TestHandlers_GetOriginalURL(t *testing.T) {
 			expectedStatus: http.StatusTemporaryRedirect,
 			expectedURL:    "http://original.url",
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetOriginalURL("94UUE").Return("http://original.url", nil).AnyTimes()
+				mockService.EXPECT().GetOriginalURL(gomock.Any(), "94UUE").Return("http://original.url", nil).AnyTimes()
 			},
 		},
 		{
@@ -99,7 +99,7 @@ func TestHandlers_GetOriginalURL(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedURL:    "",
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetOriginalURL("94UUE").Return("", errors.New("some error")).AnyTimes()
+				mockService.EXPECT().GetOriginalURL(gomock.Any(), "94UUE").Return("", errors.New("some error")).AnyTimes()
 			},
 		},
 	}
@@ -146,7 +146,7 @@ func TestHandlers_GetJSONShortURL(t *testing.T) {
 			expectedJSON:   `{"result": "http://localhost:8080/94UUE"}`,
 			expectedStatus: http.StatusCreated,
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetShortURL("http://original.url").Return("http://localhost:8080/94UUE", nil).AnyTimes()
+				mockService.EXPECT().GetShortURL(gomock.Any(), "http://original.url").Return("http://localhost:8080/94UUE", nil).AnyTimes()
 			},
 		},
 		{
@@ -156,7 +156,7 @@ func TestHandlers_GetJSONShortURL(t *testing.T) {
 			expectedStatus: http.StatusConflict,
 			expectedError:  models.ErrURLFound,
 			mockSetup: func(mockService *mocks.MockService) {
-				mockService.EXPECT().GetShortURL("http://original.url").Return("http://localhost:8080/94UUE", models.ErrURLFound).AnyTimes()
+				mockService.EXPECT().GetShortURL(gomock.Any(), "http://original.url").Return("http://localhost:8080/94UUE", models.ErrURLFound).AnyTimes()
 			},
 		},
 	}

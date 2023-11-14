@@ -1,6 +1,7 @@
 package repositoryes
 
 import (
+	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -39,6 +40,7 @@ func TestRepositoryURL_GetOriginalURLFromDB(t *testing.T) {
 		origToShortURL map[string]string
 	}
 	type args struct {
+		ctx      context.Context
 		shortURL string
 	}
 	tests := []struct {
@@ -51,7 +53,7 @@ func TestRepositoryURL_GetOriginalURLFromDB(t *testing.T) {
 		{
 			name:    "valid get original URL",
 			fields:  fields{map[string]string{"short": "original"}, map[string]string{"original": "short"}},
-			args:    args{shortURL: "short"},
+			args:    args{ctx: context.Background(), shortURL: "short"},
 			want:    "original",
 			wantErr: assert.NoError,
 		},
@@ -62,7 +64,7 @@ func TestRepositoryURL_GetOriginalURLFromDB(t *testing.T) {
 				shortToOrigURL: tt.fields.shortToOrigURL,
 				origToShortURL: tt.fields.origToShortURL,
 			}
-			got, err := d.GetOriginalURLFromDB(tt.args.shortURL)
+			got, err := d.GetOriginalURLFromDB(tt.args.ctx, tt.args.shortURL)
 			if !tt.wantErr(t, err, fmt.Sprintf("GetOriginalURLFromDB(%v)", tt.args.shortURL)) {
 				return
 			}
@@ -77,6 +79,7 @@ func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
 		origToShortURL map[string]string
 	}
 	type args struct {
+		ctx         context.Context
 		originalURL string
 	}
 	tests := []struct {
@@ -89,7 +92,7 @@ func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
 		{
 			name:    "valid get short URL",
 			fields:  fields{map[string]string{"short": "original"}, map[string]string{"original": "short"}},
-			args:    args{originalURL: "original"},
+			args:    args{ctx: context.Background(), originalURL: "original"},
 			want:    "short",
 			wantErr: assert.NoError,
 		},
@@ -100,7 +103,7 @@ func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
 				shortToOrigURL: tt.fields.shortToOrigURL,
 				origToShortURL: tt.fields.origToShortURL,
 			}
-			got, err := d.GetShortURLFromDB(tt.args.originalURL)
+			got, err := d.GetShortURLFromDB(tt.args.ctx, tt.args.originalURL)
 			if !tt.wantErr(t, err, fmt.Sprintf("GetShortURLFromDB(%v)", tt.args.originalURL)) {
 				return
 			}
@@ -218,6 +221,7 @@ func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
 		storageFilePath string
 	}
 	type args struct {
+		ctx         context.Context
 		originalURL string
 		shortURL    string
 	}
@@ -244,7 +248,7 @@ func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
 				batchSize:       100,
 				storageFilePath: createTempFilePath(t),
 			},
-			args:    args{originalURL: "original2", shortURL: "short2"},
+			args:    args{ctx: context.Background(), originalURL: "original2", shortURL: "short2"},
 			wantErr: assert.NoError,
 		},
 	}
@@ -259,7 +263,7 @@ func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
 				batchSize:       tt.fields.batchSize,
 				storageFilePath: tt.fields.storageFilePath,
 			}
-			tt.wantErr(t, m.StoreURLInDB(tt.args.originalURL, tt.args.shortURL), fmt.Sprintf("StoreURLInDB(%v, %v)", tt.args.originalURL, tt.args.shortURL))
+			tt.wantErr(t, m.StoreURLInDB(tt.args.ctx, tt.args.originalURL, tt.args.shortURL), fmt.Sprintf("StoreURLInDB(%v, %v)", tt.args.originalURL, tt.args.shortURL))
 			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}

@@ -1,12 +1,14 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"time"
 )
 
 // Repository defines the interface for interacting with the storage backend.
@@ -15,21 +17,21 @@ import (
 type Repository interface {
 	// StoreURLInDB saves a mapping between an original URL and its shortened version in the database.
 	// It returns an error if the saving process fails.
-	StoreURLInDB(originalURL, shortURL string) error
+	StoreURLInDB(ctx context.Context, originalURL, shortURL string) error
 	// GetShortURLFromDB retrieves the shortened version of a given original URL from the database.
 	// It returns the shortened URL and any error encountered during the retrieval.
-	GetShortURLFromDB(originalURL string) (string, error)
+	GetShortURLFromDB(ctx context.Context, originalURL string) (string, error)
 	// GetOriginalURLFromDB retrieves the original URL corresponding to a given shortened URL from the database.
 	// It returns the original URL and any error encountered during the retrieval.
-	GetOriginalURLFromDB(shortURL string) (string, error)
+	GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error)
 	// StoreBatchURLInDB saves multiple URL mappings in the database in a batch operation.
 	// The input is a map where keys are shortened URLs and values are the corresponding original URLs.
 	// It returns an error if the batch saving process fails.
-	StoreBatchURLInDB(batchURLtoStores map[string]string) error
+	StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error
 	// GetShortBatchURLFromDB retrieves multiple shortened URLs corresponding to a batch of original URLs from the database.
 	// The input is a slice of URLRequest objects containing original URLs.
 	//  It returns found in database a map of original URLs to their shortened counterparts and any error encountered during the retrieval.
-	GetShortBatchURLFromDB(batchURLRequests []models.URLRequest) (map[string]string, error)
+	GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error)
 }
 type Encoder interface {
 	CryptoBase62Encode() string
@@ -52,11 +54,11 @@ func NewShortURLServices(repository Repository, encoder Encoder, baseURL string)
 	}
 }
 
-func (s ShortURLServices) GetBatchJSONShortURL(batchURLRequests []models.URLRequest) ([]models.URLResponse, error) {
+func (s ShortURLServices) GetBatchJSONShortURL(ctx context.Context, batchURLRequests []models.URLRequest) ([]models.URLResponse, error) {
 	fmt.Println("Service GetBatchJSONShortURL run")
 	var batchURLtoStores = make(map[string]string, len(batchURLRequests))
 	var batchURLResponses []models.URLResponse
-	shortsURL, err := s.repository.GetShortBatchURLFromDB(batchURLRequests)
+	shortsURL, err := s.repository.GetShortBatchURLFromDB(ctx, batchURLRequests)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -70,7 +72,9 @@ func (s ShortURLServices) GetBatchJSONShortURL(batchURLRequests []models.URLRequ
 			batchURLResponses = append(batchURLResponses, models.URLResponse{CorrelationID: value.CorrelationID, ShortURL: s.baseURL + "/" + shortURL})
 		}
 	}
-	err = s.repository.StoreBatchURLInDB(batchURLtoStores)
+	saveCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	err = s.repository.StoreBatchURLInDB(saveCtx, batchURLtoStores)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -79,11 +83,13 @@ func (s ShortURLServices) GetBatchJSONShortURL(batchURLRequests []models.URLRequ
 }
 
 // GetShortURL returns the short URL
-func (s ShortURLServices) GetShortURL(url string) (string, error) {
-	shortURL, err := s.repository.GetShortURLFromDB(url)
+func (s ShortURLServices) GetShortURL(ctx context.Context, url string) (string, error) {
+	shortURL, err := s.repository.GetShortURLFromDB(ctx, url)
 	if err != nil {
 		shortURL = s.encoder.CryptoBase62Encode()
-		err = s.repository.StoreURLInDB(url, shortURL)
+		saveCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		err = s.repository.StoreURLInDB(saveCtx, url, shortURL)
 		if err != nil {
 			return "", err
 		}
@@ -93,8 +99,8 @@ func (s ShortURLServices) GetShortURL(url string) (string, error) {
 }
 
 // GetOriginalURL returns the origin URL for the given short URL
-func (s ShortURLServices) GetOriginalURL(shortURL string) (string, error) {
-	originURL, err := s.repository.GetOriginalURLFromDB(shortURL)
+func (s ShortURLServices) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	originURL, err := s.repository.GetOriginalURLFromDB(ctx, shortURL)
 	if err != nil {
 		return "", err
 	}
