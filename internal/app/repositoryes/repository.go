@@ -1,41 +1,172 @@
 package repositoryes
 
 import (
+	"bufio"
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/sirupsen/logrus"
+	"os"
+	"strconv"
+	"time"
 )
 
-type RepositoryURL struct {
-	shortToOrigURL map[string]string
-	origToShortURL map[string]string
+// URLInFileRepo auxiliary structure for serialization in jSON for save to file
+type URLInFileRepo struct {
+	UUID        string `json:"uuid"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+type URLInMemoryRepo struct {
+	shortToOrigURL  map[string]string
+	origToShortURL  map[string]string
+	lastUUID        int
+	batchBuffer     []URLInFileRepo
+	batchCounter    int
+	batchSize       int
+	storageFilePath string
 }
 
-func NewRepository(shortToOrigURL map[string]string, origToShortURL map[string]string) *RepositoryURL {
-	storage := RepositoryURL{
-		shortToOrigURL: shortToOrigURL,
-		origToShortURL: origToShortURL,
+func NewURLInMemoryRepo(storageFilePath string) *URLInMemoryRepo {
+	storage := URLInMemoryRepo{
+		shortToOrigURL:  make(map[string]string),
+		origToShortURL:  make(map[string]string),
+		lastUUID:        0,
+		batchBuffer:     make([]URLInFileRepo, 0),
+		batchCounter:    0,
+		batchSize:       100,
+		storageFilePath: storageFilePath,
+	}
+	err := storage.readFileToMemoryURL()
+	if err != nil {
+		logrus.Error(err)
 	}
 	return &storage
 }
 
-func (d *RepositoryURL) StoreURLSInDB(originalURL, shortURL string) error {
-	d.origToShortURL[originalURL] = shortURL
-	d.shortToOrigURL[shortURL] = originalURL
-	if d.origToShortURL[originalURL] == "" || d.shortToOrigURL[shortURL] == "" {
-		return errors.New("error saving shortUrl")
+// readFileToMemoryURL read data from file and write it to memory (to URLInMemoryRepo)
+func (m *URLInMemoryRepo) readFileToMemoryURL() error {
+	file, err := os.Open(m.storageFilePath)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	var buffer []byte
+	var bufferJSON URLInFileRepo
+	for scanner.Scan() {
+		buffer = scanner.Bytes()
+		err = json.Unmarshal(buffer, &bufferJSON)
+		if err != nil {
+			logrus.Error(err)
+			return err
+		}
+
+		m.shortToOrigURL[bufferJSON.ShortURL] = bufferJSON.OriginalURL
+		m.origToShortURL[bufferJSON.OriginalURL] = bufferJSON.ShortURL
+	}
+	if err = scanner.Err(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	m.lastUUID, err = strconv.Atoi(bufferJSON.UUID)
+	if err != nil {
+		return err
 	}
 	return nil
 }
-func (d *RepositoryURL) GetOriginalURLFromDB(shortURL string) (string, error) {
-	originalURL, exists := d.shortToOrigURL[shortURL]
+func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
+	m.origToShortURL[originalURL] = shortURL
+	m.shortToOrigURL[shortURL] = originalURL
+	m.lastUUID++
+	newUUID := strconv.Itoa(m.lastUUID)
+	record := URLInFileRepo{
+		UUID:        newUUID,
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+	}
+	m.batchBuffer = append(m.batchBuffer, record)
+	m.batchCounter++
+	if m.batchCounter >= m.batchSize {
+		err := m.SaveBatchToFile()
+		if err != nil {
+			return err
+		}
+		logrus.Infof("%d URL saved to file", m.batchCounter)
+		m.batchCounter = 0
+	}
+
+	if m.origToShortURL[originalURL] == "" || m.shortToOrigURL[shortURL] == "" {
+		err := errors.New("error saving shortUrl")
+		logrus.Error(err)
+		return err
+	}
+	return nil
+}
+func (m *URLInMemoryRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
+	originalURL, exists := m.shortToOrigURL[shortURL]
 	if !exists {
 		return "", errors.New("original URL not found")
 	}
 	return originalURL, nil
 }
-func (d *RepositoryURL) GetShortURLFromDB(originalURL string) (string, error) {
-	shortURL, exists := d.origToShortURL[originalURL]
+func (m *URLInMemoryRepo) GetShortURLFromDB(ctx context.Context, originalURL string) (string, error) {
+	shortURL, exists := m.origToShortURL[originalURL]
 	if !exists {
 		return "", errors.New("short URL not found")
 	}
 	return shortURL, nil
+}
+
+// SaveBatchToFile read data from the memory (URLInMemoryRepo batchBuffer) and write to the file in a batch operation
+func (m *URLInMemoryRepo) SaveBatchToFile() error {
+	startTime := time.Now() // Засекаем время начала операции
+	file, err := os.OpenFile(m.storageFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+	encoder := json.NewEncoder(writer)
+	for _, v := range m.batchBuffer {
+		err = encoder.Encode(v)
+		if err != nil {
+			return err
+		}
+	}
+	err = writer.Flush() // Запись оставшихся данных из буфера в файл
+	if err != nil {
+		return err
+	}
+
+	elapsedTime := time.Since(startTime) // Вычисляем затраченное время
+	logrus.Infof("%d URL saved in %v", m.batchCounter, elapsedTime)
+	m.batchBuffer = make([]URLInFileRepo, 0, m.batchSize)
+	return nil
+}
+func (m *URLInMemoryRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
+	saveCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	for shortURL, originalURL := range batchURLtoStores {
+		if err := m.StoreURLInDB(saveCtx, originalURL, shortURL); err != nil {
+			fmt.Println("Error saving to memory")
+			return err
+		}
+	}
+	return nil
+}
+func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
+	var shortsURL = make(map[string]string, len(batchURLRequests))
+
+	for _, request := range batchURLRequests {
+		if shortURL, ok := m.origToShortURL[request.OriginalURL]; ok {
+			shortsURL[request.OriginalURL] = shortURL
+		}
+	}
+
+	return shortsURL, nil
 }

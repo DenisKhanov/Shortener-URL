@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/DenisKhanov/shorterURL/internal/app/services/mocks"
 	"github.com/golang/mock/gomock"
@@ -14,7 +15,7 @@ func TestNewService(t *testing.T) {
 	mockRepo := mocks.NewMockRepository(ctrl)
 	mockEncoder := mocks.NewMockEncoder(ctrl)
 	baseURL := "http://localhost:8080"
-	service := NewServices(mockRepo, mockEncoder, baseURL)
+	service := NewShortURLServices(mockRepo, mockEncoder, baseURL)
 	if service.repository != mockRepo {
 		t.Errorf("Expected repository to be set, got %v", service.repository)
 	}
@@ -36,7 +37,7 @@ func TestServices_GetShortURL(t *testing.T) {
 			originalURL:      "http://original.url",
 			expectedShortURL: "http://localhost:8080/shortURL",
 			mockSetup: func(mockRepo *mocks.MockRepository, mockEncoder *mocks.MockEncoder) {
-				mockRepo.EXPECT().GetShortURLFromDB("http://original.url").Return("shortURL", nil).AnyTimes()
+				mockRepo.EXPECT().GetShortURLFromDB(gomock.Any(), "http://original.url").Return("shortURL", nil).AnyTimes()
 			},
 		},
 		{
@@ -44,9 +45,9 @@ func TestServices_GetShortURL(t *testing.T) {
 			originalURL:      "http://original.url",
 			expectedShortURL: "http://localhost:8080/shortURL",
 			mockSetup: func(mockRepo *mocks.MockRepository, mockEncoder *mocks.MockEncoder) {
-				mockRepo.EXPECT().GetShortURLFromDB("http://original.url").Return("", errors.New("short URL not found")).AnyTimes()
+				mockRepo.EXPECT().GetShortURLFromDB(context.Background(), "http://original.url").Return("", errors.New("short URL not found")).AnyTimes()
 				mockEncoder.EXPECT().CryptoBase62Encode().Return("shortURL").AnyTimes()
-				mockRepo.EXPECT().StoreURLSInDB("http://original.url", "shortURL").Return(nil).AnyTimes()
+				mockRepo.EXPECT().StoreURLInDB(gomock.Any(), "http://original.url", "shortURL").Return(nil).AnyTimes()
 			},
 		},
 		{
@@ -55,9 +56,9 @@ func TestServices_GetShortURL(t *testing.T) {
 			originalURL:      "http://original.url",
 			expectedShortURL: "",
 			mockSetup: func(mockRepo *mocks.MockRepository, mockEncoder *mocks.MockEncoder) {
-				mockRepo.EXPECT().GetShortURLFromDB("http://original.url").Return("", errors.New("short URL not found")).AnyTimes()
+				mockRepo.EXPECT().GetShortURLFromDB(context.Background(), "http://original.url").Return("", errors.New("short URL not found")).AnyTimes()
 				mockEncoder.EXPECT().CryptoBase62Encode().Return("shortURL").AnyTimes()
-				mockRepo.EXPECT().StoreURLSInDB("http://original.url", "shortURL").Return(errors.New("error saving shortUrl")).AnyTimes()
+				mockRepo.EXPECT().StoreURLInDB(gomock.Any(), "http://original.url", "shortURL").Return(errors.New("error saving shortUrl")).AnyTimes()
 			},
 		},
 	}
@@ -68,14 +69,20 @@ func TestServices_GetShortURL(t *testing.T) {
 			mockRepo := mocks.NewMockRepository(ctrl)
 			mockEncoder := mocks.NewMockEncoder(ctrl)
 			tt.mockSetup(mockRepo, mockEncoder)
-			service := Services{repository: mockRepo, encoder: mockEncoder, baseURL: "http://localhost:8080"}
-			result, err := service.GetShortURL(tt.originalURL)
-			if tt.name == "ShortURL not found in repository "+
-				"and failed to save" {
-				assert.EqualError(t, err, "error saving shortUrl")
+			service := ShortURLServices{repository: mockRepo, encoder: mockEncoder, baseURL: "http://localhost:8080"}
+			result, err := service.GetShortURL(context.Background(), tt.originalURL)
+			if tt.name == "ShortURL found in repository" {
+				assert.Equal(t, tt.expectedShortURL, result)
+				assert.EqualError(t, err, "short URL found in database")
 			} else {
-				assert.NoError(t, err)
+				if tt.name == "ShortURL not found in repository "+
+					"and failed to save" {
+					assert.EqualError(t, err, "error saving shortUrl")
+				} else {
+					assert.NoError(t, err)
+				}
 			}
+
 			assert.Equal(t, tt.expectedShortURL, result)
 		})
 	}
@@ -94,7 +101,7 @@ func TestServices_GetOriginalURL(t *testing.T) {
 			shortURL:            "shortURL",
 			expectedOriginalURL: "http://original.url",
 			mockSetup: func(mockRepo *mocks.MockRepository) {
-				mockRepo.EXPECT().GetOriginalURLFromDB("shortURL").Return("http://original.url", nil).AnyTimes()
+				mockRepo.EXPECT().GetOriginalURLFromDB(gomock.Any(), "shortURL").Return("http://original.url", nil).AnyTimes()
 			},
 		},
 		{
@@ -102,7 +109,7 @@ func TestServices_GetOriginalURL(t *testing.T) {
 			shortURL:            "shortURL",
 			expectedOriginalURL: "",
 			mockSetup: func(mockRepo *mocks.MockRepository) {
-				mockRepo.EXPECT().GetOriginalURLFromDB("shortURL").Return("", errors.New("original URL not found")).AnyTimes()
+				mockRepo.EXPECT().GetOriginalURLFromDB(gomock.Any(), "shortURL").Return("", errors.New("original URL not found")).AnyTimes()
 			},
 		},
 	}
@@ -112,8 +119,8 @@ func TestServices_GetOriginalURL(t *testing.T) {
 			defer ctrl.Finish()
 			mockRepo := mocks.NewMockRepository(ctrl)
 			tt.mockSetup(mockRepo)
-			service := Services{repository: mockRepo, baseURL: "http://localhost:8080"}
-			result, err := service.GetOriginalURL(tt.shortURL)
+			service := ShortURLServices{repository: mockRepo, baseURL: "http://localhost:8080"}
+			result, err := service.GetOriginalURL(context.Background(), tt.shortURL)
 			if tt.name == "OriginalURL not found in repository" {
 				assert.EqualError(t, err, "original URL not found")
 			} else {
@@ -125,12 +132,12 @@ func TestServices_GetOriginalURL(t *testing.T) {
 }
 
 func TestCryptoBase62Encode(t *testing.T) {
-	service := Services{}
+	service := ShortURLServices{}
 
 	encoded := service.CryptoBase62Encode()
 
 	if len(encoded) > 8 {
-		t.Errorf("expected length <= 7, got %d", len(encoded))
+		t.Errorf("expected length <= 8, got %d", len(encoded))
 	}
 
 	const base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

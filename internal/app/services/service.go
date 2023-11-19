@@ -1,53 +1,106 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
+	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/sirupsen/logrus"
 	"strings"
+	"time"
 )
 
+// Repository defines the interface for interacting with the storage backend.
+//
 //go:generate mockgen -source=service.go -destination=mocks/service_mock.go -package=mocks
 type Repository interface {
-	StoreURLSInDB(originalURL, shortURL string) error
-	GetShortURLFromDB(originalURL string) (string, error)
-	GetOriginalURLFromDB(shortURL string) (string, error)
+	// StoreURLInDB saves a mapping between an original URL and its shortened version in the database.
+	// It returns an error if the saving process fails.
+	StoreURLInDB(ctx context.Context, originalURL, shortURL string) error
+	// GetShortURLFromDB retrieves the shortened version of a given original URL from the database.
+	// It returns the shortened URL and any error encountered during the retrieval.
+	GetShortURLFromDB(ctx context.Context, originalURL string) (string, error)
+	// GetOriginalURLFromDB retrieves the original URL corresponding to a given shortened URL from the database.
+	// It returns the original URL and any error encountered during the retrieval.
+	GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error)
+	// StoreBatchURLInDB saves multiple URL mappings in the database in a batch operation.
+	// The input is a map where keys are shortened URLs and values are the corresponding original URLs.
+	// It returns an error if the batch saving process fails.
+	StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error
+	// GetShortBatchURLFromDB retrieves multiple shortened URLs corresponding to a batch of original URLs from the database.
+	// The input is a slice of URLRequest objects containing original URLs.
+	//  It returns found in database a map of original URLs to their shortened counterparts and any error encountered during the retrieval.
+	GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error)
 }
 type Encoder interface {
 	CryptoBase62Encode() string
 }
 
-type Services struct {
+type ShortURLServices struct {
 	repository Repository
 	encoder    Encoder
 	baseURL    string
 }
+type URLInMemoryRepository interface {
+	SaveBatchToFile() error
+}
 
-func NewServices(repository Repository, encoder Encoder, baseURL string) *Services {
-	return &Services{
+func NewShortURLServices(repository Repository, encoder Encoder, baseURL string) *ShortURLServices {
+	return &ShortURLServices{
 		repository: repository,
 		encoder:    encoder,
 		baseURL:    baseURL,
 	}
 }
 
+func (s ShortURLServices) GetBatchJSONShortURL(ctx context.Context, batchURLRequests []models.URLRequest) ([]models.URLResponse, error) {
+	fmt.Println("Service GetBatchJSONShortURL run")
+	var batchURLtoStores = make(map[string]string, len(batchURLRequests))
+	var batchURLResponses []models.URLResponse
+	shortsURL, err := s.repository.GetShortBatchURLFromDB(ctx, batchURLRequests)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	for _, value := range batchURLRequests {
+		if shortURL, ok := shortsURL[value.OriginalURL]; ok {
+			batchURLResponses = append(batchURLResponses, models.URLResponse{CorrelationID: value.CorrelationID, ShortURL: s.baseURL + "/" + shortURL})
+		} else {
+			shortURL = s.encoder.CryptoBase62Encode()
+			batchURLtoStores[shortURL] = value.OriginalURL
+			batchURLResponses = append(batchURLResponses, models.URLResponse{CorrelationID: value.CorrelationID, ShortURL: s.baseURL + "/" + shortURL})
+		}
+	}
+	saveCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	err = s.repository.StoreBatchURLInDB(saveCtx, batchURLtoStores)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	return batchURLResponses, nil
+}
+
 // GetShortURL returns the short URL
-func (s Services) GetShortURL(url string) (string, error) {
-	shortURL, err := s.repository.GetShortURLFromDB(url)
+func (s ShortURLServices) GetShortURL(ctx context.Context, url string) (string, error) {
+	shortURL, err := s.repository.GetShortURLFromDB(ctx, url)
 	if err != nil {
 		shortURL = s.encoder.CryptoBase62Encode()
-		err = s.repository.StoreURLSInDB(url, shortURL)
+		saveCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		err = s.repository.StoreURLInDB(saveCtx, url, shortURL)
 		if err != nil {
 			return "", err
 		}
-	} else {
 		return s.baseURL + "/" + shortURL, nil
 	}
-	return s.baseURL + "/" + shortURL, nil
+	return s.baseURL + "/" + shortURL, models.ErrURLFound
 }
 
 // GetOriginalURL returns the origin URL for the given short URL
-func (s Services) GetOriginalURL(shortURL string) (string, error) {
-	originURL, err := s.repository.GetOriginalURLFromDB(shortURL)
+func (s ShortURLServices) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	originURL, err := s.repository.GetOriginalURLFromDB(ctx, shortURL)
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +112,7 @@ func (s Services) GetOriginalURL(shortURL string) (string, error) {
 // The random number is generated using a cryptographically
 // secure random number generator.
 // The returned string has a length of up to 7 characters
-func (s Services) CryptoBase62Encode() string {
+func (s ShortURLServices) CryptoBase62Encode() string {
 	b := make([]byte, 8) // uint64 состоит из 8 байт, но мы будем использовать только 42 бита
 	_, _ = rand.Read(b)
 	num := binary.BigEndian.Uint64(b) & ((1 << 42) - 1) // Обнуление всех бит, кроме младших 42 бит
