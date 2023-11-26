@@ -16,8 +16,8 @@ type Claims struct {
 }
 
 const (
-	TOKEN_EXP  = time.Hour * 3
-	SECRET_KEY = "SnJSkf123jlLKNfsNln"
+	TokenExp  = time.Hour * 3
+	SecretKey = "SnJSkf123jlLKNfsNln"
 )
 
 // BuildJWTString создаёт токен и возвращает его в виде строки.
@@ -27,14 +27,14 @@ func BuildJWTString() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
 		// собственное утверждение
 		UserID: userID,
 	})
 
 	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
 		logrus.Error(err)
 		return "", err
@@ -60,7 +60,7 @@ func GetUserID(tokenString string) (uint32, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signed method: %v", t.Header["alg"])
 		}
-		return []byte(SECRET_KEY), nil
+		return []byte(SecretKey), nil
 	})
 	if err != nil {
 		logrus.Error(err)
@@ -80,7 +80,7 @@ func IsValidToken(tokenString string) bool {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signed method: %v", t.Header["alg"])
 		}
-		return []byte(SECRET_KEY), nil
+		return []byte(SecretKey), nil
 	})
 	if err != nil {
 		logrus.Error(err)
