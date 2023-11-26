@@ -41,7 +41,7 @@ func (d *URLInDBRepo) CreateBDTable() error {
 	return nil
 }
 func (d *URLInDBRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
-	userID, ok := ctx.Value("userID").(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uint32)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}
@@ -54,7 +54,7 @@ func (d *URLInDBRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL st
 	return nil
 }
 func (d *URLInDBRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
-	userID, ok := ctx.Value("userID").(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uint32)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}
@@ -107,7 +107,7 @@ func (d *URLInDBRepo) GetShortURLFromDB(ctx context.Context, originalURL string)
 }
 func (d *URLInDBRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
 	const selectQuery = `SELECT shorturl,originalurl FROM shortedurl WHERE userid = $1`
-	userID, ok := ctx.Value("userID").(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uint32)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}

@@ -103,7 +103,7 @@ func (m *URLInMemoryRepo) SaveBatchToFile() error {
 	return nil
 }
 func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
-	userID, ok := ctx.Value("userID").(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uint32)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}
@@ -169,7 +169,7 @@ func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRe
 	return shortsURL, nil
 }
 func (m *URLInMemoryRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
-	userID, ok := ctx.Value("userID").(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uint32)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}
