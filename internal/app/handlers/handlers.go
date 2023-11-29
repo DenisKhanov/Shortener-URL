@@ -37,6 +37,8 @@ type Service interface {
 	GetBatchShortURL(ctx context.Context, batchURLRequests []models.URLRequest) ([]models.URLResponse, error)
 	// GetUserURLS takes a slice of models.URL objects for a specific user
 	GetUserURLS(ctx context.Context) ([]models.URL, error)
+	DelUserURLS(ctx context.Context, URLSToDel []string) error
+	AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string)
 }
 
 type Handlers struct {
@@ -95,6 +97,10 @@ func (h Handlers) GetOriginalURL(c *gin.Context) {
 	shortURL := c.Param("id")
 	originURL, err := h.service.GetOriginalURL(ctx, shortURL)
 	if err != nil {
+		if errors.Is(err, models.ErrURLDeleted) {
+			c.Status(http.StatusGone)
+			return
+		}
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -141,6 +147,18 @@ func (h Handlers) GetUserURLS(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, fullShortUserURLS)
+}
+func (h Handlers) DelUserURLS(c *gin.Context) {
+	ctx := c.Request.Context()
+	var URLSToDel []string
+	if err := c.ShouldBindJSON(&URLSToDel); err != nil {
+		logrus.Error(err)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	c.Status(http.StatusAccepted)
+	h.service.AsyncDeleteUserURLs(ctx, URLSToDel)
+
 }
 func (h Handlers) PingDB(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -260,13 +278,11 @@ func (h Handlers) MiddlewareAuthPrivate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("user_token")
 		if err != nil {
-			//c.AbortWithStatus(http.StatusUnauthorized) должно быть так, но пока тесты с ошибкой, придется возвращать 204
-			c.AbortWithStatus(http.StatusNoContent)
+			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 		userID, err := auth.GetUserID(tokenString)
 		if err != nil {
-			//c.AbortWithStatus(http.StatusUnauthorized) должно быть так, но пока тесты с ошибкой, придется возвращать 204
-			c.AbortWithStatus(http.StatusNoContent)
+			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 		ctx := context.WithValue(c.Request.Context(), models.UserIDKey, userID)
 		c.Request = c.Request.WithContext(ctx)

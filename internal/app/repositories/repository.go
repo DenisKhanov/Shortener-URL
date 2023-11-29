@@ -179,3 +179,6 @@ func (m *URLInMemoryRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, 
 	}
 	return userURLS, nil
 }
+func (m *URLInMemoryRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error {
+	return nil
+}

@@ -73,6 +73,7 @@ func main() {
 	privateRoutes.Use(myHandler.MiddlewareCompress())
 
 	privateRoutes.GET("/api/user/urls", myHandler.GetUserURLS)
+	privateRoutes.DELETE("/api/user/urls", myHandler.DelUserURLS)
 
 	server := &http.Server{Addr: cfg.EnvServAdr, Handler: router}
 

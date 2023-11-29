@@ -30,7 +30,8 @@ func (d *URLInDBRepo) CreateBDTable() error {
 		CREATE TABLE IF NOT EXISTS shortedurl (
 		"userid" integer NOT NULL,
 		"shorturl" VARCHAR(250) NOT NULL,
-		"originalurl" VARCHAR(4096) NOT NULL UNIQUE
+		"originalurl" VARCHAR(4096) NOT NULL UNIQUE,
+		"deletedflag" bool NOT NULL DEFAULT false
 	)`
 	_, err := d.DB.Exec(ctx, sqlQuery)
 	if err != nil {
@@ -77,10 +78,38 @@ func (d *URLInDBRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores ma
 	}
 	return tx.Commit(ctx)
 }
+func (d *URLInDBRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error {
+	if len(URLSToDel) == 0 {
+		return nil
+	}
+
+	tx, err := d.DB.Begin(ctx)
+	if err != nil {
+		logrus.Error("Failed to begin transaction: ", err)
+		return err
+	}
+	defer tx.Rollback(ctx) // Откат транзакции в случае ошибки
+
+	const sqlQuery = `UPDATE shortedurl SET deletedflag = true WHERE shorturl = ANY($1) AND userid = $2`
+	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	if !ok {
+		logrus.Errorf("context value is not userID: %v", userID)
+		return fmt.Errorf("invalid user context")
+	}
+	_, err = tx.Exec(ctx, sqlQuery, URLSToDel, userID)
+	if err != nil {
+		logrus.Error("Failed to mark URLs as deleted: ", err)
+		return err
+	}
+	logrus.Infof("Complete mark URLs as deleted: %s, %d", URLSToDel, userID)
+	return tx.Commit(ctx)
+}
+
 func (d *URLInDBRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
-	const selectQuery = `SELECT originalurl FROM shortedurl WHERE shorturl = $1`
+	const selectQuery = `SELECT originalurl, deletedflag FROM shortedurl WHERE shorturl = $1`
 	var originalURL string
-	err := d.DB.QueryRow(ctx, selectQuery, shortURL).Scan(&originalURL)
+	var deletedFlag bool
+	err := d.DB.QueryRow(ctx, selectQuery, shortURL).Scan(&originalURL, &deletedFlag)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", fmt.Errorf("original URL not found")
@@ -88,6 +117,10 @@ func (d *URLInDBRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string)
 		logrus.Error("error querying for short URL: ", err)
 
 		return "", fmt.Errorf("error querying for short URL: %w", err)
+	}
+	fmt.Println(originalURL, deletedFlag)
+	if deletedFlag {
+		return "", models.ErrURLDeleted
 	}
 	return originalURL, nil
 }

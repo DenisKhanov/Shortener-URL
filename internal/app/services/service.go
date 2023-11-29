@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // Repository defines the interface for interacting with the storage backend.
@@ -33,6 +34,7 @@ type Repository interface {
 	GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error)
 	// GetUserURLSFromDB takes a slice of models.URL objects for a specific user from DB
 	GetUserURLSFromDB(ctx context.Context) ([]models.URL, error)
+	MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error
 }
 type Encoder interface {
 	CryptoBase62Encode() string
@@ -125,6 +127,29 @@ func (s ShortURLServices) GetUserURLS(ctx context.Context) ([]models.URL, error)
 	return fullShortUserURLS, nil
 }
 
+func (s ShortURLServices) AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string) {
+	go func() {
+		asyncCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		userID, ok := ctx.Value(models.UserIDKey).(uint32)
+		if !ok {
+			logrus.Errorf("context value is not userID: %v", userID)
+		}
+		asyncCtx = context.WithValue(asyncCtx, models.UserIDKey, userID)
+		defer func() {
+			if r := recover(); r != nil {
+				logrus.Errorf("Recovered in AsyncDeleteUserURLs: %v", r)
+			}
+		}()
+		if err := s.repository.MarkURLsAsDeleted(asyncCtx, URLSToDel); err != nil {
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+	}()
+}
+
 // CryptoBase62Encode generates a unique string that is a
 // Base62-encoded representation of a 42-bit random number.
 // The random number is generated using a cryptographically
@@ -142,4 +167,14 @@ func (s ShortURLServices) CryptoBase62Encode() string {
 		num = num / 62
 	}
 	return shortURL.String()
+}
+
+func (s ShortURLServices) DelUserURLS(ctx context.Context, URLSToDel []string) error {
+	if err := s.repository.MarkURLsAsDeleted(ctx, URLSToDel); err != nil {
+		if err != nil {
+			logrus.Error(err)
+			return err
+		}
+	}
+	return nil
 }
