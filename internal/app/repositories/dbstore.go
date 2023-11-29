@@ -82,20 +82,25 @@ func (d *URLInDBRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string)
 	if len(URLSToDel) == 0 {
 		return nil
 	}
-
-	tx, err := d.DB.Begin(ctx)
-	if err != nil {
-		logrus.Error("Failed to begin transaction: ", err)
-		return err
-	}
-	defer tx.Rollback(ctx) // Откат транзакции в случае ошибки
-
-	const sqlQuery = `UPDATE shortedurl SET deletedflag = true WHERE shorturl = ANY($1) AND userid = $2`
 	userID, ok := ctx.Value(models.UserIDKey).(uint32)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 		return fmt.Errorf("invalid user context")
 	}
+	tx, err := d.DB.Begin(ctx)
+	if err != nil {
+		logrus.Error("Failed to begin transaction: ", err)
+		return err
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				logrus.Errorf("Failed to rollback transaction: %v", rollbackErr)
+			}
+		}
+	}()
+
+	const sqlQuery = `UPDATE shortedurl SET deletedflag = true WHERE shorturl = ANY($1) AND userid = $2`
 	_, err = tx.Exec(ctx, sqlQuery, URLSToDel, userID)
 	if err != nil {
 		logrus.Error("Failed to mark URLs as deleted: ", err)
@@ -104,7 +109,6 @@ func (d *URLInDBRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string)
 	logrus.Infof("Complete mark URLs as deleted: %s, %d", URLSToDel, userID)
 	return tx.Commit(ctx)
 }
-
 func (d *URLInDBRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
 	const selectQuery = `SELECT originalurl, deletedflag FROM shortedurl WHERE shorturl = $1`
 	var originalURL string
@@ -118,7 +122,6 @@ func (d *URLInDBRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string)
 
 		return "", fmt.Errorf("error querying for short URL: %w", err)
 	}
-	fmt.Println(originalURL, deletedFlag)
 	if deletedFlag {
 		return "", models.ErrURLDeleted
 	}

@@ -127,20 +127,15 @@ func (s ShortURLServices) GetUserURLS(ctx context.Context) ([]models.URL, error)
 	return fullShortUserURLS, nil
 }
 func (s ShortURLServices) AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string) {
+	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	if !ok {
+		logrus.Errorf("context value is not userID: %v", userID)
+		return
+	}
 	go func() {
 		asyncCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
-
-		userID, ok := ctx.Value(models.UserIDKey).(uint32)
-		if !ok {
-			logrus.Errorf("context value is not userID: %v", userID)
-		}
 		asyncCtx = context.WithValue(asyncCtx, models.UserIDKey, userID)
-		defer func() {
-			if r := recover(); r != nil {
-				logrus.Errorf("Recovered in AsyncDeleteUserURLs: %v", r)
-			}
-		}()
 		if err := s.repository.MarkURLsAsDeleted(asyncCtx, URLSToDel); err != nil {
 			logrus.Error(err)
 		}
