@@ -37,7 +37,6 @@ type Service interface {
 	GetBatchShortURL(ctx context.Context, batchURLRequests []models.URLRequest) ([]models.URLResponse, error)
 	// GetUserURLS takes a slice of models.URL objects for a specific user
 	GetUserURLS(ctx context.Context) ([]models.URL, error)
-	DelUserURLS(ctx context.Context, URLSToDel []string) error
 	AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string)
 }
 

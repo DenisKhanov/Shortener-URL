@@ -126,7 +126,6 @@ func (s ShortURLServices) GetUserURLS(ctx context.Context) ([]models.URL, error)
 	}
 	return fullShortUserURLS, nil
 }
-
 func (s ShortURLServices) AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string) {
 	go func() {
 		asyncCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -143,9 +142,7 @@ func (s ShortURLServices) AsyncDeleteUserURLs(ctx context.Context, URLSToDel []s
 			}
 		}()
 		if err := s.repository.MarkURLsAsDeleted(asyncCtx, URLSToDel); err != nil {
-			if err != nil {
-				logrus.Error(err)
-			}
+			logrus.Error(err)
 		}
 	}()
 }
@@ -167,14 +164,4 @@ func (s ShortURLServices) CryptoBase62Encode() string {
 		num = num / 62
 	}
 	return shortURL.String()
-}
-
-func (s ShortURLServices) DelUserURLS(ctx context.Context, URLSToDel []string) error {
-	if err := s.repository.MarkURLsAsDeleted(ctx, URLSToDel); err != nil {
-		if err != nil {
-			logrus.Error(err)
-			return err
-		}
-	}
-	return nil
 }
