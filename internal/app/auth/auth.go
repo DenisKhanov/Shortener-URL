@@ -8,8 +8,7 @@ import (
 	"time"
 )
 
-// Claims — структура утверждений, которая включает стандартные утверждения
-// и одно пользовательское — UserID
+// Claims — claims structure that includes standard claims and UserID
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID uint32
@@ -20,40 +19,34 @@ const (
 	SecretKey = "SnJSkf123jlLKNfsNln"
 )
 
-// BuildJWTString создаёт токен и возвращает его в виде строки.
+// BuildJWTString creates a token with the HS256 signature algorithm and Claims statements and returns it as a string.
 func BuildJWTString() (string, error) {
-	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
 	userID := generateUniqueID()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
-		// собственное утверждение
 		UserID: userID,
 	})
-
 	// создаём строку токена
 	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
 		logrus.Error(err)
 		return "", err
 	}
-
-	// возвращаем строку токена
 	return tokenString, nil
 }
 
+// generate Unique ID generate a unique UserID from 0 to 999999
 func generateUniqueID() uint32 {
 	rand.NewSource(time.Now().UnixNano())
-	for {
-		// Генерируем случайное число от 0 до 999999
-		id := uint32(rand.Intn(1000000))
-		logrus.Infof("Generated user id is: %v", id)
-		return id
-	}
+	id := uint32(rand.Intn(1000000))
+	logrus.Infof("Generated user id is: %v", id)
+	return id
 }
 
+// GetUserID we check the validity of the token and if it is valid, then we get and return the UserID from it
 func GetUserID(tokenString string) (uint32, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -74,6 +67,8 @@ func GetUserID(tokenString string) (uint32, error) {
 	logrus.Infof("Token is valid, userID: %v", claims.UserID)
 	return claims.UserID, nil
 }
+
+// IsValidToken method to check the token for validity, we return bool
 func IsValidToken(tokenString string) bool {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -91,5 +86,5 @@ func IsValidToken(tokenString string) bool {
 		logrus.Error(err)
 		return false
 	}
-	return true // Ваша реализация проверки токена
+	return true
 }

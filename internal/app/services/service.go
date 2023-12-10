@@ -34,6 +34,7 @@ type Repository interface {
 	GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error)
 	// GetUserURLSFromDB takes a slice of models.URL objects for a specific user from DB
 	GetUserURLSFromDB(ctx context.Context) ([]models.URL, error)
+	// MarkURLsAsDeleted marks user URLs as deleted in DB
 	MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error
 }
 type Encoder interface {
@@ -127,15 +128,9 @@ func (s ShortURLServices) GetUserURLS(ctx context.Context) ([]models.URL, error)
 	return fullShortUserURLS, nil
 }
 func (s ShortURLServices) AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string) {
-	userID, ok := ctx.Value(models.UserIDKey).(uint32)
-	if !ok {
-		logrus.Errorf("context value is not userID: %v", userID)
-		return
-	}
 	go func() {
-		asyncCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		asyncCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Minute)
 		defer cancel()
-		asyncCtx = context.WithValue(asyncCtx, models.UserIDKey, userID)
 		if err := s.repository.MarkURLsAsDeleted(asyncCtx, URLSToDel); err != nil {
 			logrus.Error(err)
 		}
