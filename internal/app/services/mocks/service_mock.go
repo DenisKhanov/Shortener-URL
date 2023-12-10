@@ -80,6 +80,35 @@ func (mr *MockRepositoryMockRecorder) GetShortURLFromDB(ctx, originalURL interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortURLFromDB", reflect.TypeOf((*MockRepository)(nil).GetShortURLFromDB), ctx, originalURL)
 }
 
+// GetUserURLSFromDB mocks base method.
+func (m *MockRepository) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserURLSFromDB", ctx)
+	ret0, _ := ret[0].([]models.URL)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserURLSFromDB indicates an expected call of GetUserURLSFromDB.
+func (mr *MockRepositoryMockRecorder) GetUserURLSFromDB(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLSFromDB", reflect.TypeOf((*MockRepository)(nil).GetUserURLSFromDB), ctx)
+}
+
+// MarkURLsAsDeleted mocks base method.
+func (m *MockRepository) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkURLsAsDeleted", ctx, URLSToDel)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkURLsAsDeleted indicates an expected call of MarkURLsAsDeleted.
+func (mr *MockRepositoryMockRecorder) MarkURLsAsDeleted(ctx, URLSToDel interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkURLsAsDeleted", reflect.TypeOf((*MockRepository)(nil).MarkURLsAsDeleted), ctx, URLSToDel)
+}
+
 // StoreBatchURLInDB mocks base method.
 func (m *MockRepository) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
 	m.ctrl.T.Helper()

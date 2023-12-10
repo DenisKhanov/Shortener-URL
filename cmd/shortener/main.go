@@ -7,12 +7,11 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/config"
 	"github.com/DenisKhanov/shorterURL/internal/app/handlers"
 	"github.com/DenisKhanov/shorterURL/internal/app/logcfg"
-	"github.com/DenisKhanov/shorterURL/internal/app/repositoryes"
+	"github.com/DenisKhanov/shorterURL/internal/app/repositories"
 	"github.com/DenisKhanov/shorterURL/internal/app/services"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,7 +32,7 @@ func main() {
 	if cfg.EnvDataBase != "" {
 		confPool, err := pgxpool.ParseConfig(cfg.EnvDataBase)
 		if err != nil {
-			log.Fatalf("error parsing config: %v", err)
+			logrus.Errorf("error parsing config: %v", err)
 		}
 		confPool.MaxConns = 50
 		confPool.MinConns = 10
@@ -44,9 +43,9 @@ func main() {
 		}
 
 		defer dbPool.Close()
-		myRepository = repositoryes.NewURLInDBRepo(dbPool)
+		myRepository = repositories.NewURLInDBRepo(dbPool)
 	} else {
-		myRepository = repositoryes.NewURLInMemoryRepo(cfg.EnvStoragePath)
+		myRepository = repositories.NewURLInMemoryRepo(cfg.EnvStoragePath)
 		repositoryReciver = true
 	}
 
@@ -56,15 +55,25 @@ func main() {
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
 	router := gin.Default()
-	router.Use(myHandler.MiddlewareLogging())
-	router.Use(myHandler.MiddlewareCompress())
-	//router.Use(gzip.Gzip(gzip.BestSpeed))
+	//Public middleware routers group
+	publicRoutes := router.Group("/")
+	publicRoutes.Use(myHandler.MiddlewareAuthPublic())
+	publicRoutes.Use(myHandler.MiddlewareLogging())
+	publicRoutes.Use(myHandler.MiddlewareCompress())
 
-	router.POST("/", myHandler.GetShortURL)
-	router.GET("/ping", myHandler.PingDB)
-	router.GET("/:id", myHandler.GetOriginalURL)
-	router.POST("/api/shorten", myHandler.GetJSONShortURL)
-	router.POST("/api/shorten/batch", myHandler.GetBatchJSONShortURL)
+	publicRoutes.POST("/", myHandler.GetShortURL)
+	publicRoutes.GET("/ping", myHandler.PingDB)
+	publicRoutes.GET("/:id", myHandler.GetOriginalURL)
+	publicRoutes.POST("/api/shorten", myHandler.GetJSONShortURL)
+	publicRoutes.POST("/api/shorten/batch", myHandler.GetBatchShortURL)
+	//Private middleware routers group
+	privateRoutes := router.Group("/")
+	privateRoutes.Use(myHandler.MiddlewareAuthPrivate())
+	privateRoutes.Use(myHandler.MiddlewareLogging())
+	privateRoutes.Use(myHandler.MiddlewareCompress())
+
+	privateRoutes.GET("/api/user/urls", myHandler.GetUserURLS)
+	privateRoutes.DELETE("/api/user/urls", myHandler.DelUserURLS)
 
 	server := &http.Server{Addr: cfg.EnvServAdr, Handler: router}
 

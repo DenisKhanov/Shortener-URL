@@ -16,8 +16,7 @@ func TestNewConfig(t *testing.T) {
 		expectedConfig *ENVConfig
 	}{
 		{
-			name:     "default values",
-			flagArgs: []string{},
+			name: "default values",
 			expectedConfig: &ENVConfig{
 				EnvServAdr:     "localhost:8080",
 				EnvBaseURL:     "http://localhost:8080",
