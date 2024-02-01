@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"os"
 	"time"
@@ -14,15 +15,15 @@ import (
 
 // URLInFileRepo auxiliary structure for serialization in jSON for save to file
 type URLInFileRepo struct {
-	UserID      uint32 `json:"user_id"`
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	UserID      uuid.UUID `json:"user_id"`
+	ShortURL    string    `json:"short_url"`
+	OriginalURL string    `json:"original_url"`
 }
 
 type URLInMemoryRepo struct {
 	shortToOrigURL  map[string]string
 	origToShortURL  map[string]string
-	usersURLS       map[uint32][]models.URL
+	usersURLS       map[uuid.UUID][]models.URL
 	batchBuffer     []URLInFileRepo
 	batchCounter    uint8
 	batchSize       uint8
@@ -33,7 +34,7 @@ func NewURLInMemoryRepo(storageFilePath string) *URLInMemoryRepo {
 	storage := URLInMemoryRepo{
 		shortToOrigURL:  make(map[string]string),
 		origToShortURL:  make(map[string]string),
-		usersURLS:       make(map[uint32][]models.URL),
+		usersURLS:       make(map[uuid.UUID][]models.URL),
 		batchBuffer:     []URLInFileRepo{},
 		batchCounter:    0,
 		batchSize:       100,
@@ -103,7 +104,7 @@ func (m *URLInMemoryRepo) SaveBatchToFile() error {
 	return nil
 }
 func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
-	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}
@@ -169,7 +170,7 @@ func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRe
 	return shortsURL, nil
 }
 func (m *URLInMemoryRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
-	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}

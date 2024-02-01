@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
 
+var UserID, _ = uuid.Parse("e774844b-5895-4b08-b867-50480263f75b")
+
 func TestNewRepository(t *testing.T) {
+
 	tests := []struct {
 		name string
 		want *URLInMemoryRepo
@@ -19,8 +23,8 @@ func TestNewRepository(t *testing.T) {
 			want: &URLInMemoryRepo{
 				shortToOrigURL: map[string]string{"short1": "original1"},
 				origToShortURL: map[string]string{"original1": "short1"},
-				usersURLS: map[uint32][]models.URL{
-					123456: {{ShortURL: "short1", OriginalURL: "original1"}},
+				usersURLS: map[uuid.UUID][]models.URL{
+					UserID: {{ShortURL: "short1", OriginalURL: "original1"}},
 				},
 				batchBuffer:     make([]URLInFileRepo, 0),
 				batchCounter:    0,
@@ -85,7 +89,7 @@ func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
 	type fields struct {
 		shortToOrigURL map[string]string
 		origToShortURL map[string]string
-		usersURLS      map[uint32][]models.URL
+		usersURLS      map[uuid.UUID][]models.URL
 	}
 	type args struct {
 		ctx         context.Context
@@ -103,7 +107,7 @@ func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
 			fields: fields{
 				map[string]string{"short1": "original1"},
 				map[string]string{"original1": "short1"},
-				map[uint32][]models.URL{123456: {{ShortURL: "short1", OriginalURL: "original1"}}},
+				map[uuid.UUID][]models.URL{UserID: {{ShortURL: "short1", OriginalURL: "original1"}}},
 			},
 			args:    args{ctx: context.Background(), originalURL: "original1"},
 			want:    "short1",
@@ -129,7 +133,7 @@ func TestURLInMemoryRepo_ReadFileToMemoryURL(t *testing.T) {
 	type fields struct {
 		shortToOrigURL  map[string]string
 		origToShortURL  map[string]string
-		usersURLS       map[uint32][]models.URL
+		usersURLS       map[uuid.UUID][]models.URL
 		batchBuffer     []URLInFileRepo
 		batchCounter    uint8
 		batchSize       uint8
@@ -145,8 +149,8 @@ func TestURLInMemoryRepo_ReadFileToMemoryURL(t *testing.T) {
 			fields: fields{
 				shortToOrigURL: map[string]string{"short1": "original1"},
 				origToShortURL: map[string]string{"original1": "short1"},
-				usersURLS: map[uint32][]models.URL{
-					123456: {{ShortURL: "short1", OriginalURL: "original1"}},
+				usersURLS: map[uuid.UUID][]models.URL{
+					UserID: {{ShortURL: "short1", OriginalURL: "original1"}},
 				},
 				batchBuffer:     []URLInFileRepo{},
 				batchCounter:    0,
@@ -177,7 +181,7 @@ func TestURLInMemoryRepo_SaveBatchToFile(t *testing.T) {
 	type fields struct {
 		shortToOrigURL  map[string]string
 		origToShortURL  map[string]string
-		usersURLS       map[uint32][]models.URL
+		usersURLS       map[uuid.UUID][]models.URL
 		batchBuffer     []URLInFileRepo
 		batchCounter    uint8
 		batchSize       uint8
@@ -193,12 +197,12 @@ func TestURLInMemoryRepo_SaveBatchToFile(t *testing.T) {
 			fields: fields{
 				shortToOrigURL: map[string]string{"short1": "original1"},
 				origToShortURL: map[string]string{"original1": "short1"},
-				usersURLS: map[uint32][]models.URL{
-					123456: {{ShortURL: "short1", OriginalURL: "original1"}},
+				usersURLS: map[uuid.UUID][]models.URL{
+					UserID: {{ShortURL: "short1", OriginalURL: "original1"}},
 				},
 				batchBuffer: []URLInFileRepo{
 					{
-						UserID:      123456,
+						UserID:      UserID,
 						ShortURL:    "short1",
 						OriginalURL: "original1",
 					},
@@ -231,7 +235,7 @@ func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
 	type fields struct {
 		shortToOrigURL  map[string]string
 		origToShortURL  map[string]string
-		usersURLS       map[uint32][]models.URL
+		usersURLS       map[uuid.UUID][]models.URL
 		batchBuffer     []URLInFileRepo
 		batchCounter    uint8
 		batchSize       uint8
@@ -253,12 +257,12 @@ func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
 			fields: fields{
 				shortToOrigURL: map[string]string{"short2": "original2"},
 				origToShortURL: map[string]string{"original2": "short2"},
-				usersURLS: map[uint32][]models.URL{
-					123456: {{ShortURL: "short2", OriginalURL: "original2"}},
+				usersURLS: map[uuid.UUID][]models.URL{
+					UserID: {{ShortURL: "short2", OriginalURL: "original2"}},
 				},
 				batchBuffer: []URLInFileRepo{
 					{
-						UserID:      123456,
+						UserID:      UserID,
 						ShortURL:    "short2",
 						OriginalURL: "original2",
 					},
@@ -293,7 +297,7 @@ func createTempFilePath(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	_, err = tempFile.Write([]byte(`{"user_id":123456,"short_url":"short1","original_url":"original1"}`))
+	_, err = tempFile.Write([]byte(`{"user_id":"e774844b-5895-4b08-b867-50480263f75b","short_url":"short1","original_url":"original1"}`))
 	if err != nil {
 		t.Fatalf("Failed to write to temp file: %v", err)
 	}

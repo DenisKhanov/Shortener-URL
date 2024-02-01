@@ -5,19 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 )
 
 type URLInDBRepo struct {
-	UserID uint8         `json:"id"`
+	UserID uuid.UUID     `json:"id"`
 	DB     *pgxpool.Pool //opened in main func DB pool connections
 }
 
 func NewURLInDBRepo(DB *pgxpool.Pool) *URLInDBRepo {
 	storage := &URLInDBRepo{
-		UserID: 0,
+		UserID: uuid.Nil,
 		DB:     DB,
 	}
 	storage.CreateBDTable()
@@ -28,7 +29,7 @@ func (d *URLInDBRepo) CreateBDTable() error {
 	ctx := context.Background()
 	sqlQuery := `
 		CREATE TABLE IF NOT EXISTS shortedurl (
-		"userid" integer NOT NULL,
+		"userid" UUID NOT NULL,
 		"shorturl" VARCHAR(250) NOT NULL,
 		"originalurl" VARCHAR(4096) NOT NULL UNIQUE,
 		"deletedflag" bool NOT NULL DEFAULT false
@@ -42,7 +43,7 @@ func (d *URLInDBRepo) CreateBDTable() error {
 	return nil
 }
 func (d *URLInDBRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
-	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}
@@ -55,7 +56,7 @@ func (d *URLInDBRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL st
 	return nil
 }
 func (d *URLInDBRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
-	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}
@@ -82,7 +83,7 @@ func (d *URLInDBRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string)
 	if len(URLSToDel) == 0 {
 		return nil
 	}
-	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 		return fmt.Errorf("invalid user context")
@@ -143,7 +144,7 @@ func (d *URLInDBRepo) GetShortURLFromDB(ctx context.Context, originalURL string)
 }
 func (d *URLInDBRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
 	const selectQuery = `SELECT shorturl,originalurl FROM shortedurl WHERE userid = $1`
-	userID, ok := ctx.Value(models.UserIDKey).(uint32)
+	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
 	}

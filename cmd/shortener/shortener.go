@@ -9,6 +9,7 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/logcfg"
 	"github.com/DenisKhanov/shorterURL/internal/app/repositories"
 	"github.com/DenisKhanov/shorterURL/internal/app/services"
+	"github.com/gin-contrib/pprof" // подключаем пакет pprof gin
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
@@ -55,6 +56,8 @@ func main() {
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
 	router := gin.Default()
+	// Use the pprof middleware
+	pprof.Register(router)
 	//Public middleware routers group
 	publicRoutes := router.Group("/")
 	publicRoutes.Use(myHandler.MiddlewareAuthPublic())

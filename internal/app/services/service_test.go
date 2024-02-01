@@ -147,3 +147,11 @@ func TestCryptoBase62Encode(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkShortURLServices_CryptoBase62Encode(b *testing.B) {
+	service := ShortURLServices{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		service.CryptoBase62Encode()
+	}
+}

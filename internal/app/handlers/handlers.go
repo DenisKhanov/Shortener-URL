@@ -7,6 +7,7 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/auth"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
@@ -56,8 +57,6 @@ type loggingResponseWriter struct {
 	http.ResponseWriter
 	responseData *responseData
 }
-
-var typeArray = [2]string{"application/json", "text/html"}
 
 func NewHandlers(service Service, DB *pgxpool.Pool) *Handlers {
 	return &Handlers{
@@ -208,8 +207,8 @@ func (h Handlers) PingDB(c *gin.Context) {
 		c.Status(http.StatusOK)
 		return
 	}
+	logrus.Info("DB connection pool is empty")
 	c.Status(http.StatusInternalServerError)
-
 }
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
@@ -298,7 +297,7 @@ func (h Handlers) MiddlewareAuthPublic() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 		var err error
-		var userID uint32
+		var userID uuid.UUID
 
 		tokenString, err = c.Cookie("user_token")
 		// если токен не найден в куке, то генерируем новый и добавляем его в куки

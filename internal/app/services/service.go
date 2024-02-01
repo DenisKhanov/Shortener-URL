@@ -7,7 +7,6 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/sirupsen/logrus"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -147,11 +146,12 @@ func (s ShortURLServices) CryptoBase62Encode() string {
 	_, _ = rand.Read(b)
 	num := binary.BigEndian.Uint64(b) & ((1 << 42) - 1) // Обнуление всех бит, кроме младших 42 бит
 	chars := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	var shortURL strings.Builder
+
+	var shortURL = make([]byte, 0, 8)
 	for num > 0 {
 		remainder := num % 62
-		shortURL.WriteString(string(chars[remainder]))
+		shortURL = append(shortURL, chars[remainder])
 		num = num / 62
 	}
-	return shortURL.String()
+	return string(shortURL)
 }
