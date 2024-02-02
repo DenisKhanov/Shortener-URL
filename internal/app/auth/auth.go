@@ -16,6 +16,7 @@ type Claims struct {
 	UserID uuid.UUID
 }
 
+// const for generate token
 const (
 	// TokenExp defines the expiration duration for JWT tokens.
 	TokenExp = time.Hour * 3
