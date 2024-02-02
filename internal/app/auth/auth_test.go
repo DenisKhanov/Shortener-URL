@@ -10,6 +10,11 @@ type args struct {
 	tokenString string
 }
 
+// Это ваша функция проверки токена, которую вы можете использовать вместо стандартной в тестах.
+func mockTokenValidation(tokenString string) (bool, error) {
+	// Логика проверки токена, возвращающая всегда true в тестах.
+	return true, nil
+}
 func TestBuildJWTString(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -48,12 +53,13 @@ func TestGenerateUniqueID(t *testing.T) {
 }
 
 func TestGetUserID(t *testing.T) {
+	token, _ := BuildJWTString()
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{"ValidToken", args{tokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDY4MTk4NzMsIlVzZXJJRCI6ImFkMTMwNjM1LTExNWMtNDhjMy1iYjZmLTJjNmZmNTIxNzA5ZSJ9.UjLVHSwQcLDZuUKIJoo1H3t8flbciC7eipnc-YcMW0w"}, false},
+		{"ValidToken", args{tokenString: token}, false},
 		{"InvalidToken", args{tokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ.eyJleHAiOjE3MDY4MTk4NzMsIlVzZXJJRCI6ImFkMTMwNjM1LTExNWMtNDhjMy1iYjZmLTJjNmZmNTIxNzA5ZSJ9.UjLVHSwQcLDZuUKIJoo1H3t8flbciC7eipnc-YcMW0w"}, true},
 	}
 	for _, tt := range tests {
@@ -71,12 +77,13 @@ func TestGetUserID(t *testing.T) {
 }
 
 func TestIsValidToken(t *testing.T) {
+	validToken, _ := BuildJWTString()
 	tests := []struct {
 		name string
 		args args
 		want bool
 	}{
-		{"ValidToken", args{tokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDY4MTk4NzMsIlVzZXJJRCI6ImFkMTMwNjM1LTExNWMtNDhjMy1iYjZmLTJjNmZmNTIxNzA5ZSJ9.UjLVHSwQcLDZuUKIJoo1H3t8flbciC7eipnc-YcMW0w"}, true},
+		{"ValidToken", args{tokenString: validToken}, true},
 		{"InvalidToken", args{tokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ.eyJleHAiOjE3MDY4MTk4NzMsIlVzZXJJRCI6ImFkMTMwNjM1LTExNWMtNDhjMy1iYjZmLTJjNmZmNTIxNzA5ZSJ9.UjLVHSwQcLDZuUKIJoo1H3t8flbciC7eipnc-YcMW0w"}, false},
 	}
 	for _, tt := range tests {
