@@ -55,6 +55,8 @@ func main() {
 	myShorURLService := services.NewShortURLServices(myRepository, services.ShortURLServices{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
+	// Установка переменной окружения для отключения режима разработки
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	// Use the pprof middleware
 	pprof.Register(router)

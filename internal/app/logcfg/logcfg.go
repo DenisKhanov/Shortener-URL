@@ -5,7 +5,6 @@ import (
 	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
 	"io"
-	"os"
 	"path"
 	"runtime"
 )
@@ -26,7 +25,7 @@ func RunLoggerConfig(EnvLogs string) {
 			return "", filename
 		},
 	})
-	mw := io.MultiWriter(os.Stdout, &lumberjack.Logger{
+	mw := io.MultiWriter(&lumberjack.Logger{
 		Filename:   "shortener.log",
 		MaxSize:    50,
 		MaxBackups: 3,
