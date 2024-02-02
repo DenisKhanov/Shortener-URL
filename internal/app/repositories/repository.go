@@ -1,3 +1,6 @@
+// Package repositories provides implementations of data storage for managing shortened URLs.
+// It includes functionality to store, retrieve, and delete URLs using in-memory and file-based storage.
+
 package repositories
 
 import (
@@ -20,6 +23,7 @@ type URLInFileRepo struct {
 	OriginalURL string    `json:"original_url"`
 }
 
+// URLInMemoryRepo represents an in-memory repository for managing shortened URLs.
 type URLInMemoryRepo struct {
 	shortToOrigURL  map[string]string
 	origToShortURL  map[string]string
@@ -30,6 +34,8 @@ type URLInMemoryRepo struct {
 	storageFilePath string
 }
 
+// NewURLInMemoryRepo creates a new instance of URLInMemoryRepo.
+// It takes a file path for storing data.
 func NewURLInMemoryRepo(storageFilePath string) *URLInMemoryRepo {
 	storage := URLInMemoryRepo{
 		shortToOrigURL:  make(map[string]string),
@@ -103,6 +109,9 @@ func (m *URLInMemoryRepo) SaveBatchToFile() error {
 	m.batchBuffer = make([]URLInFileRepo, 0, m.batchSize)
 	return nil
 }
+
+// StoreURLInDB saves a mapping between an original URL and its shortened version in the database.
+// It returns an error if the saving process fails.
 func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
 	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
@@ -135,6 +144,9 @@ func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortUR
 	}
 	return nil
 }
+
+// GetOriginalURLFromDB retrieves the original URL corresponding to a given shortened URL from the database.
+// It returns the original URL and any error encountered during the retrieval.
 func (m *URLInMemoryRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
 	originalURL, exists := m.shortToOrigURL[shortURL]
 	if !exists {
@@ -142,6 +154,9 @@ func (m *URLInMemoryRepo) GetOriginalURLFromDB(ctx context.Context, shortURL str
 	}
 	return originalURL, nil
 }
+
+// GetShortURLFromDB retrieves the shortened version of a given original URL from the database.
+// It returns the shortened URL and any error encountered during the retrieval.
 func (m *URLInMemoryRepo) GetShortURLFromDB(ctx context.Context, originalURL string) (string, error) {
 	shortURL, exists := m.origToShortURL[originalURL]
 	if !exists {
@@ -149,6 +164,10 @@ func (m *URLInMemoryRepo) GetShortURLFromDB(ctx context.Context, originalURL str
 	}
 	return shortURL, nil
 }
+
+// StoreBatchURLInDB saves multiple URL mappings in the database in a batch operation.
+// The input is a map where keys are shortened URLs and values are the corresponding original URLs.
+// It returns an error if the batch saving process fails.
 func (m *URLInMemoryRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
 	for shortURL, originalURL := range batchURLtoStores {
 		if err := m.StoreURLInDB(ctx, originalURL, shortURL); err != nil {
@@ -158,6 +177,11 @@ func (m *URLInMemoryRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStore
 	}
 	return nil
 }
+
+// GetShortBatchURLFromDB retrieves multiple shortened URLs corresponding to a batch of original URLs from the database.
+// The input is a slice of URLRequest objects containing original URLs.
+//
+//	It returns found in database a map of original URLs to their shortened counterparts and any error encountered during the retrieval.
 func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
 	var shortsURL = make(map[string]string, len(batchURLRequests))
 
@@ -169,6 +193,8 @@ func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRe
 
 	return shortsURL, nil
 }
+
+// GetUserURLSFromDB takes a slice of models.URL objects for a specific user from DB
 func (m *URLInMemoryRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
 	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
@@ -180,6 +206,8 @@ func (m *URLInMemoryRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, 
 	}
 	return userURLS, nil
 }
+
+// MarkURLsAsDeleted marks user URLs as deleted in DB
 func (m *URLInMemoryRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error {
 	return nil
 }

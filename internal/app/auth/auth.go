@@ -1,3 +1,5 @@
+// Package auth provides functions for handling authentication, JWT token creation,
+// and validation.
 package auth
 
 import (
@@ -8,14 +10,16 @@ import (
 	"time"
 )
 
-// Claims — claims structure that includes standard claims and UserID
+// Claims is a structure that includes standard JWT claims and UserID.
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID uuid.UUID
 }
 
 const (
-	TokenExp  = time.Hour * 3
+	// TokenExp defines the expiration duration for JWT tokens.
+	TokenExp = time.Hour * 3
+	// SecretKey is the secret key used for signing JWT tokens.
 	SecretKey = "SnJSkf123jlLKNfsNln"
 )
 
