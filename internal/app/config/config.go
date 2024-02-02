@@ -1,3 +1,4 @@
+// Package config provides functionality for configuring the application using environment variables.
 package config
 
 import (
@@ -16,9 +17,11 @@ type ENVConfig struct {
 	EnvDataBase    string `env:"DATABASE_DSN"`
 }
 
+// NewConfig creates a new ENVConfig instance by parsing command line flags and environment variables.
 func NewConfig() *ENVConfig {
 	var cfg ENVConfig
 
+	// Parse command line flags
 	flag.StringVar(&cfg.EnvServAdr, "a", "localhost:8080", "HTTP server address")
 
 	flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
@@ -31,6 +34,7 @@ func NewConfig() *ENVConfig {
 
 	flag.Parse()
 
+	// Parse environment variables
 	err := env.Parse(&cfg)
 	if err != nil {
 		logrus.Fatal(err)

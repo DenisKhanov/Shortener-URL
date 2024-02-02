@@ -1,3 +1,5 @@
+// Package handlers provides HTTP request handlers and middleware for the URL shortening application.
+
 package handlers
 
 import (
@@ -7,6 +9,7 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/app/auth"
 	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
@@ -41,24 +44,36 @@ type Service interface {
 	AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string)
 }
 
+// Handlers is a struct that contains HTTP request handlers and a database connection pool.
 type Handlers struct {
 	service Service
 	DB      *pgxpool.Pool
 }
+
+// URLProcessing is a struct used for JSON processing in some of the handlers.
 type URLProcessing struct {
 	URL string `json:"url"`
 }
+
+// responseData is a struct used for logging the response details.
 type responseData struct {
 	status int
 	size   int
 }
+
+// loggingResponseWriter is a custom response writer that logs the response details.
 type loggingResponseWriter struct {
 	http.ResponseWriter
 	responseData *responseData
 }
 
-var typeArray = [2]string{"application/json", "text/html"}
+// compressWriter is a custom response writer that performs gzip compression.
+type compressWriter struct {
+	gin.ResponseWriter
+	Writer *gzip.Writer
+}
 
+// NewHandlers creates a new Handlers instance with the provided service and database connection pool.
 func NewHandlers(service Service, DB *pgxpool.Pool) *Handlers {
 	return &Handlers{
 		service: service,
@@ -208,31 +223,34 @@ func (h Handlers) PingDB(c *gin.Context) {
 		c.Status(http.StatusOK)
 		return
 	}
+	logrus.Info("DB connection pool is empty")
 	c.Status(http.StatusInternalServerError)
-
 }
 
+// loggingResponseWriter provides a custom response writer for logging response details.
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
 	return size, err
 }
+
+// WriteHeader overrides the WriteHeader method to log the status code.
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode
 }
 
-type compressWriter struct {
-	gin.ResponseWriter
-	Writer *gzip.Writer
-}
-
+// compressWriter provides a custom response writer for gzip compression.
 func (c *compressWriter) Write(data []byte) (int, error) {
 	return c.Writer.Write(data)
 }
+
+// Close overrides the Close method to close the gzip writer.
 func (c *compressWriter) Close() error {
 	return c.Writer.Close()
 }
+
+// WriteString overrides the WriteString method to write a string to the gzip writer.
 func (c *compressWriter) WriteString(s string) (int, error) {
 	return c.Writer.Write([]byte(s))
 }
@@ -298,7 +316,7 @@ func (h Handlers) MiddlewareAuthPublic() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 		var err error
-		var userID uint32
+		var userID uuid.UUID
 
 		tokenString, err = c.Cookie("user_token")
 		// если токен не найден в куке, то генерируем новый и добавляем его в куки

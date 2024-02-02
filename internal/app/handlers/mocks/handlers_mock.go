@@ -47,20 +47,6 @@ func (mr *MockServiceMockRecorder) AsyncDeleteUserURLs(ctx, URLSToDel interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsyncDeleteUserURLs", reflect.TypeOf((*MockService)(nil).AsyncDeleteUserURLs), ctx, URLSToDel)
 }
 
-// DelUserURLS mocks base method.
-func (m *MockService) DelUserURLS(ctx context.Context, URLSToDel []string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DelUserURLS", ctx, URLSToDel)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DelUserURLS indicates an expected call of DelUserURLS.
-func (mr *MockServiceMockRecorder) DelUserURLS(ctx, URLSToDel interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DelUserURLS", reflect.TypeOf((*MockService)(nil).DelUserURLS), ctx, URLSToDel)
-}
-
 // GetBatchShortURL mocks base method.
 func (m *MockService) GetBatchShortURL(ctx context.Context, batchURLRequests []models.URLRequest) ([]models.URLResponse, error) {
 	m.ctrl.T.Helper()
