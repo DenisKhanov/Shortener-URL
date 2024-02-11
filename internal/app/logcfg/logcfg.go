@@ -1,6 +1,5 @@
 // Package logcfg provides configuration for the application logger.
 // It includes functionality to set the log level, report caller information, and configure log file rotation.
-
 package logcfg
 
 import (
@@ -8,6 +7,7 @@ import (
 	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
 	"io"
+	"os"
 	"path"
 	"runtime"
 )
@@ -39,7 +39,7 @@ func RunLoggerConfig(EnvLogs string) {
 	})
 
 	// Configure log file rotation using lumberjack
-	mw := io.MultiWriter(&lumberjack.Logger{
+	mw := io.MultiWriter(os.Stdout, &lumberjack.Logger{
 		Filename:   "shortener.log",
 		MaxSize:    50,
 		MaxBackups: 3,

@@ -1,6 +1,5 @@
 // Package repositories provides implementations for interacting with the data storage.
 // It includes functionality to store, retrieve, and manage shortened URLs in a PostgreSQL database.
-
 package repositories
 
 import (

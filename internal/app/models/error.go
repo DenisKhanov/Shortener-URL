@@ -1,5 +1,4 @@
 // Package models defines common models and errors for the application.
-
 package models
 
 import "errors"

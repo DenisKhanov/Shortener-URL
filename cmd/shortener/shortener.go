@@ -56,7 +56,7 @@ func main() {
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
 	// Установка переменной окружения для отключения режима разработки
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.DebugMode)
 	router := gin.Default()
 	// Use the pprof middleware
 	pprof.Register(router)
