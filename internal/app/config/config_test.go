@@ -1,7 +1,9 @@
 package config
 
 import (
+	"bytes"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
@@ -88,5 +90,48 @@ func TestNewConfig(t *testing.T) {
 			// Assert the result
 			assert.Equal(t, tt.expectedConfig, gotConfig)
 		})
+	}
+}
+
+func TestGetValueOrDefault(t *testing.T) {
+	// Test case 1: value is not empty
+	result := getValueOrDefault("testValue", "defaultValue")
+	expected := "testValue"
+	if result != expected {
+		t.Errorf("Expected: %s, Got: %s", expected, result)
+	}
+
+	// Test case 2: value is empty
+	result = getValueOrDefault("", "defaultValue")
+	expected = "defaultValue"
+	if result != expected {
+		t.Errorf("Expected: %s, Got: %s", expected, result)
+	}
+}
+
+func TestPrintProjectInfo(t *testing.T) {
+	// Redirect stdout to capture printed output
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	// Run the PrintProjectInfo function
+	PrintProjectInfo()
+
+	// Read captured output
+	var buf bytes.Buffer
+	w.Close()
+	buf.ReadFrom(r)
+	os.Stdout = old
+
+	// Expected output
+	expectedOutput := fmt.Sprintf("Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		getValueOrDefault(buildVersion, "N/A"),
+		getValueOrDefault(buildDate, "N/A"),
+		getValueOrDefault(buildCommit, "N/A"))
+
+	// Check if the printed output matches the expected output
+	if buf.String() != expectedOutput {
+		t.Errorf("Expected output: %s, Got: %s", expectedOutput, buf.String())
 	}
 }

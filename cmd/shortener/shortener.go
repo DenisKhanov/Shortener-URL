@@ -21,6 +21,10 @@ import (
 )
 
 func main() {
+
+	// Выводим сообщение о сборке проекта
+	config.PrintProjectInfo()
+
 	var (
 		dbPool            *pgxpool.Pool
 		err               error
@@ -54,7 +58,7 @@ func main() {
 	myShorURLService := services.NewShortURLServices(myRepository, services.ShortURLServices{}, cfg.EnvBaseURL)
 	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
 
-	// Установка переменной окружения для отключения режима разработки
+	// Установка переменной окружения для включения режима разработки
 	gin.SetMode(gin.DebugMode)
 	router := gin.Default()
 	// Use the pprof middleware

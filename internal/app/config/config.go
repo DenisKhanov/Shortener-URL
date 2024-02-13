@@ -3,6 +3,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"github.com/caarlos0/env"
 	"github.com/sirupsen/logrus"
 )
@@ -34,11 +35,32 @@ func NewConfig() *ENVConfig {
 
 	flag.Parse()
 
-	// Parse environment variables
+	// Parse environment variables.
 	err := env.Parse(&cfg)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	return &cfg
+}
+
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
+// getValueOrDefault returns the value, and if it is empty,it returns the default value.
+func getValueOrDefault(value, defaultValue string) string {
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+// PrintProjectInfo print info (version,date,commit) about build.
+func PrintProjectInfo() {
+	fmt.Printf("Build version: %s\n", getValueOrDefault(buildVersion, "N/A"))
+	fmt.Printf("Build date: %s\n", getValueOrDefault(buildDate, "N/A"))
+	fmt.Printf("Build commit: %s\n", getValueOrDefault(buildCommit, "N/A"))
 }

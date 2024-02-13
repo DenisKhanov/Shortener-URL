@@ -305,3 +305,165 @@ func createTempFilePath(t *testing.T) string {
 	tempFile.Close()
 	return tempPath
 }
+
+func TestURLInMemoryRepo_StoreBatchURLInDB(t *testing.T) {
+	tests := []struct {
+		name             string
+		batchURLtoStores map[string]string
+		expectedError    error
+	}{
+		{
+			name: "Valid batch of URLs",
+			batchURLtoStores: map[string]string{
+				"short1": "http://example1.com",
+				"short2": "http://example2.com",
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mocking the context for testing
+			ctx := context.WithValue(context.Background(), models.UserIDKey, uuid.New())
+			// Создаем временный файл для теста
+			tempFile, err := os.CreateTemp("", "temp_test_file.json")
+			assert.NoError(t, err)
+			defer func() {
+				tempFile.Close()
+				// Удаляем временный файл после теста
+				err := os.Remove(tempFile.Name())
+				assert.NoError(t, err)
+			}()
+
+			// Создаем репозиторий
+			repo := NewURLInMemoryRepo(tempFile.Name())
+			// Call the method under test
+			err = repo.StoreBatchURLInDB(ctx, tt.batchURLtoStores)
+
+			// Check the result
+			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
+				t.Errorf("Unexpected result. Expected error: %v, Got error: %v", tt.expectedError, err)
+			}
+
+			// Optionally, you can check the internal state of m after the operation.
+			// For example, check if the URLs are stored correctly in m.usersURLS and m.shortToOrigURL.
+		})
+	}
+}
+
+func TestURLInMemoryRepo_GetShortBatchURLFromDB(t *testing.T) {
+	tests := []struct {
+		name              string
+		batchURLRequests  []models.URLRequest
+		expectedShortURLs map[string]string
+		expectedErr       bool
+	}{
+		{
+			name: "Batch URLs found",
+			batchURLRequests: []models.URLRequest{
+				{OriginalURL: "http://example1.com"},
+				{OriginalURL: "http://example2.com"},
+			},
+			expectedShortURLs: map[string]string{
+				"http://example1.com": "short1",
+				"http://example2.com": "short2",
+			},
+			expectedErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		createTempFilePath(t)
+		t.Run(tt.name, func(t *testing.T) {
+			// Создаем временный файл для теста
+			tempFile, err := os.CreateTemp("", "temp_test_file.json")
+			assert.NoError(t, err)
+			defer func() {
+				tempFile.Close()
+				// Удаляем временный файл после теста
+				err := os.Remove(tempFile.Name())
+				assert.NoError(t, err)
+			}()
+
+			// Создаем репозиторий
+			repo := NewURLInMemoryRepo(tempFile.Name())
+			defer repo.SaveBatchToFile() // Сохраняем оставшиеся данные перед завершением теста
+
+			// Добавляем тестовые URL в репозиторий
+			for i, req := range tt.batchURLRequests {
+				shortURL := fmt.Sprintf("short%d", i+1)
+				err := repo.StoreURLInDB(context.Background(), req.OriginalURL, shortURL)
+				assert.NoError(t, err)
+			}
+
+			// Вызываем метод, который мы тестируем
+			shortURLs, err := repo.GetShortBatchURLFromDB(context.Background(), tt.batchURLRequests)
+
+			// Проверяем ошибку
+			assert.Equal(t, tt.expectedErr, err != nil)
+
+			// Проверяем, что полученные короткие URL соответствуют ожидаемым
+			assert.Equal(t, tt.expectedShortURLs, shortURLs)
+
+		})
+	}
+}
+
+func TestURLInMemoryRepo_GetUserURLSFromDB(t *testing.T) {
+	tests := []struct {
+		name        string
+		userID      uuid.UUID
+		expectedErr bool
+		expectedURL *models.URL
+	}{
+		{
+			name:        "User has URLs",
+			userID:      uuid.New(),
+			expectedErr: false,
+			expectedURL: &models.URL{
+				ShortURL:    "http://short.com",
+				OriginalURL: "http://example.com",
+			},
+		},
+		// Add more test cases as needed
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Создаем временный файл для теста
+			tempFile, err := os.CreateTemp("", "temp_test_file.json")
+			assert.NoError(t, err)
+			defer func() {
+				tempFile.Close()
+				// Удаляем временный файл после теста
+				err := os.Remove(tempFile.Name())
+				assert.NoError(t, err)
+			}()
+
+			// Создаем репозиторий
+			repo := NewURLInMemoryRepo(tempFile.Name())
+			defer repo.SaveBatchToFile() // Сохраняем оставшиеся данные перед завершением теста
+
+			// Создаем контекст с указанным userID
+			ctx := context.WithValue(context.Background(), models.UserIDKey, tt.userID)
+
+			// Добавляем тестовый URL для пользователя
+			err = repo.StoreURLInDB(ctx, "http://example.com", "http://short.com")
+			assert.NoError(t, err)
+
+			// Вызываем метод, который мы тестируем
+			userURLs, err := repo.GetUserURLSFromDB(ctx)
+
+			// Проверяем ошибку
+			assert.Equal(t, tt.expectedErr, err != nil)
+
+			// Проверяем, что полученные URL соответствуют ожидаемым
+			assert.Equal(t, len(userURLs), 1)
+
+			// Сравниваем URL по полям
+			assert.Equal(t, userURLs[0].ShortURL, tt.expectedURL.ShortURL)
+			assert.Equal(t, userURLs[0].OriginalURL, tt.expectedURL.OriginalURL)
+		})
+	}
+}
