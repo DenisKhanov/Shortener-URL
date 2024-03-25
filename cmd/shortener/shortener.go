@@ -87,21 +87,19 @@ func main() {
 		Handler: router,
 	}
 
-	if cfg.EnvHTTPS != "" {
-		logrus.Info("Starting server with TLS on: ", cfg.EnvServAdr)
-		go func() {
+	go func() {
+		if cfg.EnvHTTPS != "" {
+			logrus.Info("Starting server with TLS on: ", cfg.EnvServAdr)
 			if err = server.ListenAndServeTLS("cert.pem", "privateKey.pem"); !errors.Is(err, http.ErrServerClosed) {
 				logrus.Error(err)
 			}
-		}()
-	} else {
-		logrus.Info("Starting server on: ", cfg.EnvServAdr)
-		go func() {
+		} else {
+			logrus.Info("Starting server on: ", cfg.EnvServAdr)
 			if err = server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				logrus.Error(err)
 			}
-		}()
-	}
+		}
+	}()
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
