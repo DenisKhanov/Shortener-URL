@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/DenisKhanov/shorterURL/internal/app/config"
 	"github.com/DenisKhanov/shorterURL/internal/app/handlers"
 	"github.com/DenisKhanov/shorterURL/internal/app/logcfg"
@@ -26,11 +25,11 @@ func main() {
 	config.PrintProjectInfo()
 
 	var (
-		dbPool            *pgxpool.Pool
-		err               error
-		cfg               *config.ENVConfig
-		myRepository      services.Repository
-		repositoryReciver bool
+		dbPool             *pgxpool.Pool
+		err                error
+		cfg                *config.ENVConfig
+		myRepository       services.Repository
+		repositoryReceiver bool
 	)
 	cfg = config.NewConfig()
 	if cfg.EnvDataBase != "" {
@@ -50,7 +49,7 @@ func main() {
 		myRepository = repositories.NewURLInDBRepo(dbPool)
 	} else {
 		myRepository = repositories.NewURLInMemoryRepo(cfg.EnvStoragePath)
-		repositoryReciver = true
+		repositoryReceiver = true
 	}
 
 	logcfg.RunLoggerConfig(cfg.EnvLogLevel)
@@ -83,35 +82,44 @@ func main() {
 	privateRoutes.GET("/api/user/urls", myHandler.GetUserURLS)
 	privateRoutes.DELETE("/api/user/urls", myHandler.DelUserURLS)
 
-	server := &http.Server{Addr: cfg.EnvServAdr, Handler: router}
+	server := &http.Server{
+		Addr:    cfg.EnvServAdr,
+		Handler: router,
+	}
 
-	logrus.Info("Starting server on: ", cfg.EnvServAdr)
+	if cfg.EnvHTTPS != "" {
+		logrus.Info("Starting server with TLS on: ", cfg.EnvServAdr)
+		go func() {
+			if err = server.ListenAndServeTLS("cert.pem", "privateKey.pem"); !errors.Is(err, http.ErrServerClosed) {
+				logrus.Error(err)
+			}
+		}()
+	} else {
+		logrus.Info("Starting server on: ", cfg.EnvServAdr)
+		go func() {
+			if err = server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				logrus.Error(err)
+			}
+		}()
+	}
 
-	go func() {
-		if err = server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			logrus.Error(err)
-		}
-	}()
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-
-	<-signalChan
-
-	logrus.Info("Shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err = server.Shutdown(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "HTTP server Shutdown: %v\n", err)
-	}
-	//If the server shutting down, save batch to file
-	if repositoryReciver {
-		err = myRepository.(services.URLInMemoryRepository).SaveBatchToFile()
-		if err != nil {
-			logrus.Error(err)
+	select {
+	case sig := <-signalChan:
+		logrus.Infof("Shutting down server with signal : %v...", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err = server.Shutdown(ctx); err != nil {
+			logrus.Errorf("HTTP server Shutdown error: %v\n", err)
+		}
+		//If the server shutting down, save batch to file
+		if repositoryReceiver {
+			err = myRepository.(services.URLInMemoryRepository).SaveBatchToFile()
+			if err != nil {
+				logrus.Error(err)
+			}
 		}
 	}
-
 	logrus.Info("Server exited")
 }

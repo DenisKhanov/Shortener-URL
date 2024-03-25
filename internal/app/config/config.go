@@ -16,6 +16,7 @@ type ENVConfig struct {
 	EnvStoragePath string `env:"FILE_STORAGE_PATH"`
 	EnvLogLevel    string `env:"LOG_LEVEL"`
 	EnvDataBase    string `env:"DATABASE_DSN"`
+	EnvHTTPS       string `env:"ENABLE_HTTPS"`
 }
 
 // NewConfig creates a new ENVConfig instance by parsing command line flags and environment variables.
@@ -32,6 +33,8 @@ func NewConfig() *ENVConfig {
 	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Set logg level")
 
 	flag.StringVar(&cfg.EnvDataBase, "d", "", "Set connect DB config")
+
+	flag.StringVar(&cfg.EnvHTTPS, "s", "", "Set HTTPS on enable")
 
 	flag.Parse()
 
