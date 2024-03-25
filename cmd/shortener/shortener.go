@@ -103,21 +103,20 @@ func main() {
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case sig := <-signalChan:
-		logrus.Infof("Shutting down server with signal : %v...", sig)
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err = server.Shutdown(ctx); err != nil {
-			logrus.Errorf("HTTP server Shutdown error: %v\n", err)
-		}
-		//If the server shutting down, save batch to file
-		if repositoryReceiver {
-			err = myRepository.(services.URLInMemoryRepository).SaveBatchToFile()
-			if err != nil {
-				logrus.Error(err)
-			}
+	sig := <-signalChan
+	logrus.Infof("Shutting down server with signal : %v...", sig)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err = server.Shutdown(ctx); err != nil {
+		logrus.Errorf("HTTP server Shutdown error: %v\n", err)
+	}
+	//If the server shutting down, save batch to file
+	if repositoryReceiver {
+		err = myRepository.(services.URLInMemoryRepository).SaveBatchToFile()
+		if err != nil {
+			logrus.Error(err)
 		}
 	}
+
 	logrus.Info("Server exited")
 }
