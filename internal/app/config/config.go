@@ -22,36 +22,11 @@ type ENVConfig struct {
 	EnvHTTPS       string `env:"ENABLE_HTTPS"`
 }
 
-func checkConfigFile() *ENVConfig {
-	var cfg ENVConfig
-
-	// Parse command line flags
-	flag.StringVar(&cfg.ConfigFile, "c", "", "Path to the configuration file")
-	flag.Parse()
-	err := env.Parse(&cfg)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	if cfg.ConfigFile != "" {
-		if err = readConfigFile(&cfg, cfg.ConfigFile); err != nil {
-			logrus.Fatal(err)
-		}
-	}
-	// Parse config from JSON file if provided
-	if cfgFile := getConfigFilePath(); cfgFile != "" {
-		if err = readConfigFile(&cfg, cfgFile); err != nil {
-			logrus.Fatal(err)
-		}
-	}
-
-	return &cfg
-}
-
 // NewConfig creates a new ENVConfig instance by parsing command line flags and environment variables.
 func NewConfig() *ENVConfig {
 	var cfg ENVConfig
 
-	checkConfigFile()
+	flag.StringVar(&cfg.ConfigFile, "c", "", "Path to the configuration file")
 
 	flag.StringVar(&cfg.EnvServAdr, "a", "localhost:8080", "HTTP server address")
 
@@ -67,6 +42,13 @@ func NewConfig() *ENVConfig {
 
 	flag.Parse()
 
+	// Parse config from JSON file if provided
+	if cfgFile := getConfigFilePath(); cfgFile != "" {
+		if err := setConfigFromFile(cfgFile, &cfg); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
 	// Parse environment variables.
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -79,24 +61,7 @@ func NewConfig() *ENVConfig {
 // getConfigFilePath returns the path to the config file specified by the -c flag or the CONFIG environment variable.
 func getConfigFilePath() string {
 	cfgFile := os.Getenv("CONFIG")
-	if cfgFile != "" {
-		return cfgFile
-	}
-	return ""
-}
-
-func readConfigFile(cfg *ENVConfig, path string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(data, &cfg)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return cfgFile
 }
 
 var (
@@ -104,6 +69,47 @@ var (
 	buildDate    string
 	buildCommit  string
 )
+
+func setConfigFromFile(path string, cfg1 *ENVConfig) error {
+	var cfgFromFile ENVConfig
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	err = json.Unmarshal(data, &cfgFromFile)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	if flag.Lookup("a") == nil {
+		cfg1.EnvServAdr = cfgFromFile.EnvServAdr
+	}
+
+	if flag.Lookup("b") == nil {
+		cfg1.EnvBaseURL = cfgFromFile.EnvBaseURL
+	}
+
+	if flag.Lookup("f") == nil {
+		cfg1.EnvStoragePath = cfgFromFile.EnvStoragePath
+	}
+
+	if flag.Lookup("l") == nil {
+		cfg1.EnvLogLevel = cfgFromFile.EnvLogLevel
+	}
+
+	if flag.Lookup("d") == nil {
+		cfg1.EnvDataBase = cfgFromFile.EnvDataBase
+	}
+
+	if flag.Lookup("s") == nil {
+		cfg1.EnvHTTPS = cfgFromFile.EnvHTTPS
+	}
+	return nil
+}
 
 // getValueOrDefault returns the value, and if it is empty,it returns the default value.
 func getValueOrDefault(value, defaultValue string) string {
