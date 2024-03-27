@@ -2,15 +2,18 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 // ENVConfig holds configuration settings extracted from environment variables.
 // This struct is used to configure various aspects of the application.
 type ENVConfig struct {
+	ConfigFile     string `env:"CONFIG"`
 	EnvServAdr     string `env:"SERVER_ADDRESS"`
 	EnvBaseURL     string `env:"BASE_URL"`
 	EnvStoragePath string `env:"FILE_STORAGE_PATH"`
@@ -19,11 +22,37 @@ type ENVConfig struct {
 	EnvHTTPS       string `env:"ENABLE_HTTPS"`
 }
 
+func checkConfigFile() *ENVConfig {
+	var cfg ENVConfig
+
+	// Parse command line flags
+	flag.StringVar(&cfg.ConfigFile, "c", "", "Path to the configuration file")
+	flag.Parse()
+	err := env.Parse(&cfg)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	if cfg.ConfigFile != "" {
+		if err = readConfigFile(&cfg, cfg.ConfigFile); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+	// Parse config from JSON file if provided
+	if cfgFile := getConfigFilePath(); cfgFile != "" {
+		if err = readConfigFile(&cfg, cfgFile); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	return &cfg
+}
+
 // NewConfig creates a new ENVConfig instance by parsing command line flags and environment variables.
 func NewConfig() *ENVConfig {
 	var cfg ENVConfig
 
-	// Parse command line flags
+	checkConfigFile()
+
 	flag.StringVar(&cfg.EnvServAdr, "a", "localhost:8080", "HTTP server address")
 
 	flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
@@ -45,6 +74,29 @@ func NewConfig() *ENVConfig {
 	}
 
 	return &cfg
+}
+
+// getConfigFilePath returns the path to the config file specified by the -c flag or the CONFIG environment variable.
+func getConfigFilePath() string {
+	cfgFile := os.Getenv("CONFIG")
+	if cfgFile != "" {
+		return cfgFile
+	}
+	return ""
+}
+
+func readConfigFile(cfg *ENVConfig, path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(data, &cfg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var (
