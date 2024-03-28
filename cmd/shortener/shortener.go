@@ -102,7 +102,7 @@ func main() {
 	}()
 
 	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	sig := <-signalChan
 	logrus.Infof("Shutting down server with signal : %v...", sig)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
