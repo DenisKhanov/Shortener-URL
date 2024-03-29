@@ -22,5 +22,9 @@ type URL struct {
 // CTXKey is the type used as a context key for storing user ID.
 type CTXKey string
 
-// UserIDKey is the specific key used in the context to store user ID.
-const UserIDKey CTXKey = "userID"
+const (
+	// UserIDKey is the specific key used in the context to store user ID.
+	UserIDKey     CTXKey = "userID"
+	CertPEM       string = "cert.pem"
+	PrivateKeyPEM string = "privateKey.pem"
+)

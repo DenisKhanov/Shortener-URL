@@ -5,7 +5,9 @@ import (
 	"errors"
 	"github.com/DenisKhanov/shorterURL/internal/app/config"
 	"github.com/DenisKhanov/shorterURL/internal/app/handlers"
+	"github.com/DenisKhanov/shorterURL/internal/app/https"
 	"github.com/DenisKhanov/shorterURL/internal/app/logcfg"
+	"github.com/DenisKhanov/shorterURL/internal/app/models"
 	"github.com/DenisKhanov/shorterURL/internal/app/repositories"
 	"github.com/DenisKhanov/shorterURL/internal/app/services"
 	"github.com/gin-contrib/pprof" // подключаем пакет pprof gin
@@ -90,8 +92,12 @@ func main() {
 	go func() {
 		if cfg.EnvHTTPS != "" {
 			logrus.Info("Starting server with TLS on: ", cfg.EnvServAdr)
-			if err = server.ListenAndServeTLS("cert.pem", "privateKey.pem"); !errors.Is(err, http.ErrServerClosed) {
+			_, err = https.NewHTTPS()
+			if err != nil {
 				logrus.Error(err)
+			}
+			if err = server.ListenAndServeTLS(models.CertPEM, models.PrivateKeyPEM); !errors.Is(err, http.ErrServerClosed) {
+				logrus.Fatal(err)
 			}
 		} else {
 			logrus.Info("Starting server on: ", cfg.EnvServAdr)
