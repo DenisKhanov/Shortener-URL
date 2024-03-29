@@ -1,3 +1,5 @@
+// Package https provides functionality for generating self-signed TLS certificates and private keys,
+// and saving them to files for use in HTTPS server configurations.
 package https
 
 import (
@@ -15,11 +17,14 @@ import (
 	"time"
 )
 
+// HTTPS represents the HTTPS configuration containing the generated certificate and private key.
 type HTTPS struct {
 	cert       []byte
 	privateKey *rsa.PrivateKey
 }
 
+// NewHTTPS generates a self-signed TLS certificate and private key, saves them to files,
+// and returns the HTTPS configuration.
 func NewHTTPS() (*HTTPS, error) {
 
 	var cert = &x509.Certificate{
@@ -60,6 +65,7 @@ func NewHTTPS() (*HTTPS, error) {
 	return newHTTPS, nil
 }
 
+// saveCertToFile saves the generated certificate to a file.
 func (h *HTTPS) saveCertToFile() error {
 	var certPEM bytes.Buffer
 	if err := pem.Encode(&certPEM, &pem.Block{
@@ -77,6 +83,7 @@ func (h *HTTPS) saveCertToFile() error {
 	return nil
 }
 
+// saveKeyToFile saves the generated private key to a file.
 func (h *HTTPS) saveKeyToFile() error {
 	var privateKeyPEM bytes.Buffer
 	if err := pem.Encode(&privateKeyPEM, &pem.Block{
