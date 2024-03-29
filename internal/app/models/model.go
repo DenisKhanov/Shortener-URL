@@ -22,9 +22,9 @@ type URL struct {
 // CTXKey is the type used as a context key for storing user ID.
 type CTXKey string
 
+// All constants used in project
 const (
-	// UserIDKey is the specific key used in the context to store user ID.
-	UserIDKey     CTXKey = "userID"
-	CertPEM       string = "cert.pem"
-	PrivateKeyPEM string = "privateKey.pem"
+	UserIDKey     CTXKey = "userID"         // UserIDKey is the specific key used in the context to store user ID.
+	CertPEM       string = "cert.pem"       // CertPEM is the file name for TLS cert
+	PrivateKeyPEM string = "privateKey.pem" // PrivateKeyPEM is the file name for TLS private key
 )
