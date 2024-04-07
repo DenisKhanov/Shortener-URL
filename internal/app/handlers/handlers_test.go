@@ -44,7 +44,7 @@ func TestHandlers_GetShortURL(t *testing.T) {
 		}, {
 			name:             "POST service get error",
 			inputURL:         "http://original.url",
-			expectedShortURL: "",
+			expectedShortURL: "{\"error\":\"some error\"}",
 			expectedStatus:   http.StatusBadRequest,
 			mockSetup: func(mockService *mocks.MockService) {
 				mockService.EXPECT().GetShortURL(gomock.Any(), "http://original.url").Return("", errors.New("some error")).AnyTimes()
@@ -191,6 +191,7 @@ func TestHandlers_GetJSONShortURL(t *testing.T) {
 		{
 			name:           "POST Invalid URL",
 			inputJSON:      `{"url": "invalid-url"}`,
+			expectedJSON:   `{"error":"any error"}`,
 			expectedStatus: http.StatusBadRequest,
 			mockSetup: func(mockService *mocks.MockService) {
 				mockService.EXPECT().GetShortURL(gomock.Any(), "invalid-url").Return("", errors.New("any error")).AnyTimes()
@@ -199,6 +200,7 @@ func TestHandlers_GetJSONShortURL(t *testing.T) {
 		{
 			name:           "POST Invalid JSON",
 			inputJSON:      `invalid_json`,
+			expectedJSON:   `{"error": "JSON"}`,
 			expectedStatus: http.StatusBadRequest,
 			mockSetup: func(mockService *mocks.MockService) {
 				// В этом случае mockService не должен вызывать GetBatchShortURL

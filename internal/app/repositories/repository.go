@@ -210,3 +210,10 @@ func (m *URLInMemoryRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, 
 func (m *URLInMemoryRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error {
 	return nil
 }
+
+func (m *URLInMemoryRepo) Stats(ctx context.Context) (models.Stats, error) {
+	urls := len(m.shortToOrigURL)
+	users := len(m.usersURLS)
+	stats := models.Stats{Urls: urls, Users: users}
+	return stats, nil
+}

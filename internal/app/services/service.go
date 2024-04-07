@@ -37,7 +37,11 @@ type Repository interface {
 	GetUserURLSFromDB(ctx context.Context) ([]models.URL, error)
 	// MarkURLsAsDeleted marks user URLs as deleted in DB
 	MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error
+	// Stats retrieves the statistics of URLs and users from the database.
+	Stats(ctx context.Context) (models.Stats, error)
 }
+
+//TODO добавить проверку интерфейсов
 
 // Encoder defines the interface for encoding unique short URLs.
 type Encoder interface {
@@ -161,6 +165,18 @@ func (s ShortURLServices) AsyncDeleteUserURLs(ctx context.Context, URLSToDel []s
 			logrus.Error(err)
 		}
 	}()
+}
+
+// ServiceStats retrieves the statistics of URLs and users from the service's repository.
+//
+// This method delegates the retrieval of statistics to the repository's Stats method.
+// It then returns the obtained statistics and any error encountered during the retrieval process.
+func (s ShortURLServices) ServiceStats(ctx context.Context) (models.Stats, error) {
+	stats, err := s.repository.Stats(ctx)
+	if err != nil {
+		return models.Stats{}, err
+	}
+	return stats, err
 }
 
 // CryptoBase62Encode generates a unique string that is a

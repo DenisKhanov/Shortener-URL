@@ -109,6 +109,21 @@ func (mr *MockRepositoryMockRecorder) MarkURLsAsDeleted(ctx, URLSToDel interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkURLsAsDeleted", reflect.TypeOf((*MockRepository)(nil).MarkURLsAsDeleted), ctx, URLSToDel)
 }
 
+// Stats mocks base method.
+func (m *MockRepository) Stats(ctx context.Context) (models.Stats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stats", ctx)
+	ret0, _ := ret[0].(models.Stats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Stats indicates an expected call of Stats.
+func (mr *MockRepositoryMockRecorder) Stats(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stats", reflect.TypeOf((*MockRepository)(nil).Stats), ctx)
+}
+
 // StoreBatchURLInDB mocks base method.
 func (m *MockRepository) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
 	m.ctrl.T.Helper()

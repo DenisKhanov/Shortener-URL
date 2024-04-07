@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
+	realip "github.com/thanhhh/gin-gonic-realip"
 	"net/http"
 	"os"
 	"os/signal"
@@ -57,7 +58,10 @@ func main() {
 	logcfg.RunLoggerConfig(cfg.EnvLogLevel)
 	logrus.Infof("Server started:\nServer addres %s\nBase URL %s\nFile path %s\nDBConfig %s\n", cfg.EnvServAdr, cfg.EnvBaseURL, cfg.EnvStoragePath, cfg.EnvDataBase)
 	myShorURLService := services.NewShortURLServices(myRepository, services.ShortURLServices{}, cfg.EnvBaseURL)
-	myHandler := handlers.NewHandlers(myShorURLService, dbPool)
+	myHandler, err := handlers.NewHandlers(myShorURLService, dbPool, cfg.EnvSubnet)
+	if err != nil {
+		logrus.Error(err)
+	}
 
 	// Установка переменной окружения для включения режима разработки
 	gin.SetMode(gin.DebugMode)
@@ -75,6 +79,11 @@ func main() {
 	publicRoutes.GET("/:id", myHandler.GetOriginalURL)
 	publicRoutes.POST("/api/shorten", myHandler.GetJSONShortURL)
 	publicRoutes.POST("/api/shorten/batch", myHandler.GetBatchShortURL)
+
+	trustSubnetRouter := router.Use(realip.RealIP())
+	trustSubnetRouter.Use(myHandler.MiddlewareTrustedSubnets())
+	trustSubnetRouter.GET("/api/internal/stats", myHandler.CheckIPInTrustSubnet)
+
 	//Private middleware routers group
 	privateRoutes := router.Group("/")
 	privateRoutes.Use(myHandler.MiddlewareAuthPrivate())

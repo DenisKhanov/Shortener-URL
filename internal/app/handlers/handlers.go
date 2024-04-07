@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -41,12 +42,15 @@ type Service interface {
 	GetUserURLS(ctx context.Context) ([]models.URL, error)
 	// AsyncDeleteUserURLs async runs requests to DB for mark user URLs as deleted
 	AsyncDeleteUserURLs(ctx context.Context, URLSToDel []string)
+	// ServiceStats retrieves the statistics of URLs and users from the service's repository.
+	ServiceStats(ctx context.Context) (models.Stats, error)
 }
 
 // Handlers is a struct that contains HTTP request handlers and a database connection pool.
 type Handlers struct {
 	service Service
 	DB      *pgxpool.Pool
+	subnets []*net.IPNet
 }
 
 // URLProcessing is a struct used for JSON processing in some of the handlers.
@@ -60,12 +64,34 @@ type compressWriter struct {
 	Writer *gzip.Writer
 }
 
-// NewHandlers creates a new Handlers instance with the provided service and database connection pool.
-func NewHandlers(service Service, DB *pgxpool.Pool) *Handlers {
+// NewHandlers creates a new *Handlers instance with the provided service and database connection pool.
+func NewHandlers(service Service, DB *pgxpool.Pool, subnetsStr string) (*Handlers, error) {
+	var subnets []*net.IPNet
+	var err error
+	if subnetsStr != "" {
+		subnets, err = parseSubnets(subnetsStr)
+		if err != nil {
+			return &Handlers{}, err
+		}
+	}
 	return &Handlers{
 		service: service,
 		DB:      DB,
+		subnets: subnets,
+	}, nil
+}
+func parseSubnets(subnetsStr string) ([]*net.IPNet, error) {
+	var subnets []*net.IPNet
+	subStr := strings.Split(subnetsStr, ",")
+	for _, subnetStr := range subStr {
+		_, subnetIPNet, err := net.ParseCIDR(subnetStr)
+		if err != nil {
+			logrus.Errorf("error parsing string CIDR: %v", err)
+			return nil, err
+		}
+		subnets = append(subnets, subnetIPNet)
 	}
+	return subnets, nil
 }
 
 // GetShortURL converts a long URL to its shortened version.
@@ -73,11 +99,11 @@ func NewHandlers(service Service, DB *pgxpool.Pool) *Handlers {
 // Returns the shortened URL on success with HTTP status 201 Created.
 // On failure, returns HTTP status 400 Bad Request for invalid input or URL format,
 // or HTTP status 409 Conflict if the URL is already shortened.
-func (h Handlers) GetShortURL(c *gin.Context) {
+func (h *Handlers) GetShortURL(c *gin.Context) {
 	ctx := c.Request.Context()
 	link, err := c.GetRawData()
 	if err != nil {
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -93,7 +119,7 @@ func (h Handlers) GetShortURL(c *gin.Context) {
 			c.String(http.StatusConflict, shortURL)
 			return
 		}
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.String(http.StatusCreated, shortURL)
@@ -105,16 +131,16 @@ func (h Handlers) GetShortURL(c *gin.Context) {
 // Redirects to the original URL using HTTP 307 Temporary Redirect.
 // Returns HTTP status 410 Gone if the URL is marked as deleted,
 // or HTTP status 400 Bad Request for other errors.
-func (h Handlers) GetOriginalURL(c *gin.Context) {
+func (h *Handlers) GetOriginalURL(c *gin.Context) {
 	ctx := c.Request.Context()
 	shortURL := c.Param("id")
 	originURL, err := h.service.GetOriginalURL(ctx, shortURL)
 	if err != nil {
 		if errors.Is(err, models.ErrURLDeleted) {
-			c.Status(http.StatusGone)
+			c.JSON(http.StatusGone, gin.H{"error": err.Error()})
 			return
 		}
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.Header("Location", originURL)
@@ -126,11 +152,11 @@ func (h Handlers) GetOriginalURL(c *gin.Context) {
 // Returns a JSON object containing the shortened URL on success.
 // Sends HTTP status 400 Bad Request for malformed JSON or invalid URL,
 // or HTTP status 409 Conflict if the URL is already shortened.
-func (h Handlers) GetJSONShortURL(c *gin.Context) {
+func (h *Handlers) GetJSONShortURL(c *gin.Context) {
 	ctx := c.Request.Context()
 	var dataURL URLProcessing
 	if err := c.ShouldBindJSON(&dataURL); err != nil {
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON"})
 		return
 	}
 	result, err := h.service.GetShortURL(ctx, dataURL.URL)
@@ -139,7 +165,7 @@ func (h Handlers) GetJSONShortURL(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"result": result})
 			return
 		}
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"result": result})
@@ -149,16 +175,16 @@ func (h Handlers) GetJSONShortURL(c *gin.Context) {
 // Expects a JSON array of URL objects in the request body.
 // Returns a JSON array of objects containing original and shortened URLs.
 // On failure, sends HTTP status 500 Internal Server Error.
-func (h Handlers) GetBatchShortURL(c *gin.Context) {
+func (h *Handlers) GetBatchShortURL(c *gin.Context) {
 	ctx := c.Request.Context()
 	var batchURLRequests []models.URLRequest
 	if err := c.ShouldBindJSON(&batchURLRequests); err != nil {
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	batchURLResponses, err := h.service.GetBatchShortURL(ctx, batchURLRequests)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, batchURLResponses)
@@ -168,11 +194,11 @@ func (h Handlers) GetBatchShortURL(c *gin.Context) {
 // Does not require any parameters; user identification is from the context.
 // Returns a JSON array of URLs associated with the user.
 // If no URLs are found, returns HTTP status 204 No Content.
-func (h Handlers) GetUserURLS(c *gin.Context) {
+func (h *Handlers) GetUserURLS(c *gin.Context) {
 	ctx := c.Request.Context()
 	fullShortUserURLS, err := h.service.GetUserURLS(ctx)
 	if err != nil {
-		c.Status(http.StatusNoContent)
+		c.JSON(http.StatusNoContent, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, fullShortUserURLS)
@@ -182,36 +208,44 @@ func (h Handlers) GetUserURLS(c *gin.Context) {
 // Expects a JSON array of URL IDs to delete in the request body.
 // Acknowledges the deletion request with HTTP status 202 Accepted.
 // Returns HTTP status 400 Bad Request for malformed JSON input.
-func (h Handlers) DelUserURLS(c *gin.Context) {
+func (h *Handlers) DelUserURLS(c *gin.Context) {
 	ctx := c.Request.Context()
 	var URLSToDel []string
 	if err := c.ShouldBindJSON(&URLSToDel); err != nil {
 		logrus.Error(err)
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.Status(http.StatusAccepted)
 	h.service.AsyncDeleteUserURLs(ctx, URLSToDel)
+}
 
+func (h *Handlers) CheckIPInTrustSubnet(c *gin.Context) {
+	ctx := c.Request.Context()
+	stats, err := h.service.ServiceStats(ctx)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+	}
+	c.JSON(http.StatusOK, stats)
 }
 
 // PingDB checks the database connection.
 // Does not require any parameters.
 // Returns HTTP status 200 OK if the database connection is alive.
 // On database connection failure, returns HTTP status 500 Internal Server Error.
-func (h Handlers) PingDB(c *gin.Context) {
+func (h *Handlers) PingDB(c *gin.Context) {
 	ctx := c.Request.Context()
 	if h.DB != nil {
 		if err := h.DB.Ping(ctx); err != nil {
 			logrus.Error(err)
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		c.Status(http.StatusOK)
 		return
 	}
 	logrus.Info("DB connection pool is empty")
-	c.Status(http.StatusInternalServerError)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "DB connection pool is empty"})
 }
 
 // compressWriter provides a custom response writer for gzip compression.
@@ -229,10 +263,34 @@ func (c *compressWriter) WriteString(s string) (int, error) {
 	return c.Writer.Write([]byte(s))
 }
 
+// MiddlewareTrustedSubnets provides a
+func (h *Handlers) MiddlewareTrustedSubnets() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		if !h.isIPInSubnet(ip) {
+			logrus.Error(errors.New("this ip is not in trusted subnet"))
+			c.JSON(http.StatusForbidden, gin.H{"error": "this ip is not in trusted subnet"})
+			return
+		}
+		c.Next()
+	}
+}
+
+// IsIPInSubnet проверяет, входит ли заданный IP-адрес в подсеть CIDR.
+func (h *Handlers) isIPInSubnet(ip string) bool {
+	ipNet := net.ParseIP(ip)
+	for _, subnet := range h.subnets {
+		if subnet.Contains(ipNet) {
+			return true
+		}
+	}
+	return false
+}
+
 // MiddlewareLogging provides a logging middleware for Gin.
 // It logs details about each request including the URL, method, response status, duration, and size.
 // This middleware is useful for monitoring and debugging purposes.
-func (h Handlers) MiddlewareLogging() gin.HandlerFunc {
+func (h *Handlers) MiddlewareLogging() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Запуск таймера
 		start := time.Now()
@@ -261,7 +319,7 @@ func (h Handlers) MiddlewareLogging() gin.HandlerFunc {
 // MiddlewareCompress provides a compression middleware using gzip.
 // It checks the 'Accept-Encoding' header of incoming requests and applies gzip compression if applicable.
 // This middleware optimizes response size and speed, improving overall performance.
-func (h Handlers) MiddlewareCompress() gin.HandlerFunc {
+func (h *Handlers) MiddlewareCompress() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
 			gz := gzip.NewWriter(c.Writer)
@@ -286,7 +344,7 @@ func (h Handlers) MiddlewareCompress() gin.HandlerFunc {
 // MiddlewareAuthPublic provides authentication middleware for public routes.
 // It manages user tokens, generating new tokens if necessary, and adds user ID to the context.
 // This middleware is useful for routes that require user identification but not strict authentication.
-func (h Handlers) MiddlewareAuthPublic() gin.HandlerFunc {
+func (h *Handlers) MiddlewareAuthPublic() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 		var err error
@@ -299,7 +357,7 @@ func (h Handlers) MiddlewareAuthPublic() gin.HandlerFunc {
 			tokenString, err = auth.BuildJWTString()
 			if err != nil {
 				logrus.Errorf("error generating token: %v", err)
-				c.AbortWithStatus(http.StatusInternalServerError)
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "error generating token"})
 			}
 			c.SetCookie("user_token", tokenString, 0, "/", "", false, true)
 		}
@@ -318,15 +376,15 @@ func (h Handlers) MiddlewareAuthPublic() gin.HandlerFunc {
 // MiddlewareAuthPrivate provides authentication middleware for private routes.
 // It checks the user token and only allows access if the token is valid.
 // This middleware ensures that only authenticated users can access certain routes.
-func (h Handlers) MiddlewareAuthPrivate() gin.HandlerFunc {
+func (h *Handlers) MiddlewareAuthPrivate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("user_token")
 		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		}
 		userID, err := auth.GetUserID(tokenString)
 		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		}
 		ctx := context.WithValue(c.Request.Context(), models.UserIDKey, userID)
 		c.Request = c.Request.WithContext(ctx)

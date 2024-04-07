@@ -20,6 +20,7 @@ type ENVConfig struct {
 	EnvLogLevel    string `env:"LOG_LEVEL"`
 	EnvDataBase    string `env:"DATABASE_DSN"`
 	EnvHTTPS       string `env:"ENABLE_HTTPS"`
+	EnvSubnet      string `env:"TRUSTED_SUBNET"`
 }
 
 // NewConfig creates a new ENVConfig instance by parsing command line flags and environment variables.
@@ -39,6 +40,8 @@ func NewConfig() *ENVConfig {
 	flag.StringVar(&cfg.EnvDataBase, "d", "", "Set connect DB config")
 
 	flag.StringVar(&cfg.EnvHTTPS, "s", "", "Set HTTPS on enable")
+
+	flag.StringVar(&cfg.EnvSubnet, "t", "", "Use trusted subnet")
 
 	flag.Parse()
 
@@ -63,12 +66,6 @@ func getConfigFilePath() string {
 	cfgFile := os.Getenv("CONFIG")
 	return cfgFile
 }
-
-var (
-	buildVersion string
-	buildDate    string
-	buildCommit  string
-)
 
 func setConfigFromFile(path string, cfg1 *ENVConfig) error {
 	var cfgFromFile ENVConfig
@@ -108,8 +105,17 @@ func setConfigFromFile(path string, cfg1 *ENVConfig) error {
 	if flag.Lookup("s") == nil {
 		cfg1.EnvHTTPS = cfgFromFile.EnvHTTPS
 	}
+	if flag.Lookup("t") == nil {
+		cfg1.EnvSubnet = cfgFromFile.EnvSubnet
+	}
 	return nil
 }
+
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
 
 // getValueOrDefault returns the value, and if it is empty,it returns the default value.
 func getValueOrDefault(value, defaultValue string) string {
