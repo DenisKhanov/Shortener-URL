@@ -90,7 +90,8 @@ func main() {
 	privateRoutes.DELETE("/api/user/urls", myHandler.DelUserURLS)
 
 	//Only trusted subnet middleware
-	trustSubnetRouter := router.Use(realip.RealIP())
+	trustSubnetRouter := router.Group("/api/internal")
+	trustSubnetRouter.Use(realip.RealIP())
 	trustSubnetRouter.Use(myHandler.MiddlewareTrustedSubnets())
 
 	trustSubnetRouter.GET("/api/internal/stats", myHandler.ServiceStats)
