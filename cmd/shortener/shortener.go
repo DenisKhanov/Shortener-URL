@@ -81,7 +81,7 @@ func main() {
 	publicRoutes.POST("/api/shorten/batch", myHandler.GetBatchShortURL)
 
 	//Private middleware routers group
-	privateRoutes := router.Group("/api/user/urls")
+	privateRoutes := router.Group("/")
 	privateRoutes.Use(myHandler.MiddlewareAuthPrivate())
 	privateRoutes.Use(myHandler.MiddlewareLogging())
 	privateRoutes.Use(myHandler.MiddlewareCompress())
