@@ -80,18 +80,20 @@ func main() {
 	publicRoutes.POST("/api/shorten", myHandler.GetJSONShortURL)
 	publicRoutes.POST("/api/shorten/batch", myHandler.GetBatchShortURL)
 
-	trustSubnetRouter := router.Use(realip.RealIP())
-	trustSubnetRouter.Use(myHandler.MiddlewareTrustedSubnets())
-	trustSubnetRouter.GET("/api/internal/stats", myHandler.CheckIPInTrustSubnet)
-
 	//Private middleware routers group
-	privateRoutes := router.Group("/")
+	privateRoutes := router.Group("/api/user/urls")
 	privateRoutes.Use(myHandler.MiddlewareAuthPrivate())
 	privateRoutes.Use(myHandler.MiddlewareLogging())
 	privateRoutes.Use(myHandler.MiddlewareCompress())
 
 	privateRoutes.GET("/api/user/urls", myHandler.GetUserURLS)
 	privateRoutes.DELETE("/api/user/urls", myHandler.DelUserURLS)
+
+	//Only trusted subnet middleware
+	trustSubnetRouter := router.Use(realip.RealIP())
+	trustSubnetRouter.Use(myHandler.MiddlewareTrustedSubnets())
+
+	trustSubnetRouter.GET("/api/internal/stats", myHandler.ServiceStats)
 
 	server := &http.Server{
 		Addr:    cfg.EnvServAdr,

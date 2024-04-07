@@ -19,7 +19,7 @@ type URL struct {
 	OriginalURL string `json:"original_url"`
 }
 
-// Stats represent service info
+// Stats represent service info count
 type Stats struct {
 	Urls  int `json:"urls"`
 	Users int `json:"users"`

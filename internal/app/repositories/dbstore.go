@@ -233,8 +233,8 @@ func (d *URLInDBRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLReques
 // It then constructs a Stats struct containing the counts and returns it along with any error encountered.
 func (d *URLInDBRepo) Stats(ctx context.Context) (models.Stats, error) {
 	const selectQuery = `SELECT 
-    					 COUNT(short_url) AS urls,
-    					 COUNT(user_id) AS users
+    					 COUNT(short_url),
+    					 COUNT(DISTINCT user_id)
 						 FROM shorted_url`
 	var urls, users int
 	err := d.DB.QueryRow(ctx, selectQuery).Scan(&urls, &users)

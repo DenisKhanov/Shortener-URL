@@ -80,6 +80,8 @@ func NewHandlers(service Service, DB *pgxpool.Pool, subnetsStr string) (*Handler
 		subnets: subnets,
 	}, nil
 }
+
+// parseSubnets parses a string containing a list of CIDR subnets and returns them as a []*net.IPNet objects.
 func parseSubnets(subnetsStr string) ([]*net.IPNet, error) {
 	var subnets []*net.IPNet
 	subStr := strings.Split(subnetsStr, ",")
@@ -220,11 +222,15 @@ func (h *Handlers) DelUserURLS(c *gin.Context) {
 	h.service.AsyncDeleteUserURLs(ctx, URLSToDel)
 }
 
-func (h *Handlers) CheckIPInTrustSubnet(c *gin.Context) {
+// ServiceStats first retrieves the statistics using the ServiceStats method of the service.
+// If an error occurs during the retrieval process, it responds with a 403 Forbidden status code and an error message.
+// Otherwise, it responds with a 200 OK status code and the retrieved statistics in JSON format.
+func (h *Handlers) ServiceStats(c *gin.Context) {
 	ctx := c.Request.Context()
 	stats, err := h.service.ServiceStats(ctx)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, stats)
 }
@@ -263,7 +269,12 @@ func (c *compressWriter) WriteString(s string) (int, error) {
 	return c.Writer.Write([]byte(s))
 }
 
-// MiddlewareTrustedSubnets provides a
+// MiddlewareTrustedSubnets returns a Gin middleware function that checks if the client's IP is within the trusted subnets.
+//
+// This middleware function retrieves the client's IP using the ClientIP method of the Gin context.
+// It then checks if the IP is within the trusted subnets using the isIPInSubnet method of the Handlers struct.
+// If the IP is not within the trusted subnets, it logs an error and responds with a 403 Forbidden status code along with an error message.
+// Otherwise, it calls the Next function to proceed with the next middleware or route handler in the chain.
 func (h *Handlers) MiddlewareTrustedSubnets() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
