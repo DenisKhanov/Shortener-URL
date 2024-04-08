@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/DenisKhanov/shorterURL/internal/models"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -109,9 +109,9 @@ func (m *URLInMemoryRepo) SaveBatchToFile() error {
 	return nil
 }
 
-// StoreURLInDB saves a mapping between an original URL and its shortened version in the database.
+// StoreURL saves a mapping between an original URL and its shortened version in the database.
 // It returns an error if the saving process fails.
-func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
+func (m *URLInMemoryRepo) StoreURL(ctx context.Context, originalURL, shortURL string) error {
 	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
@@ -144,9 +144,9 @@ func (m *URLInMemoryRepo) StoreURLInDB(ctx context.Context, originalURL, shortUR
 	return nil
 }
 
-// GetOriginalURLFromDB retrieves the original URL corresponding to a given shortened URL from the database.
+// GetOriginalURL retrieves the original URL corresponding to a given shortened URL from the database.
 // It returns the original URL and any error encountered during the retrieval.
-func (m *URLInMemoryRepo) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
+func (m *URLInMemoryRepo) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	originalURL, exists := m.shortToOrigURL[shortURL]
 	if !exists {
 		return "", errors.New("original URL not found")
@@ -154,9 +154,9 @@ func (m *URLInMemoryRepo) GetOriginalURLFromDB(ctx context.Context, shortURL str
 	return originalURL, nil
 }
 
-// GetShortURLFromDB retrieves the shortened version of a given original URL from the database.
+// GetShortURL retrieves the shortened version of a given original URL from the database.
 // It returns the shortened URL and any error encountered during the retrieval.
-func (m *URLInMemoryRepo) GetShortURLFromDB(ctx context.Context, originalURL string) (string, error) {
+func (m *URLInMemoryRepo) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	shortURL, exists := m.origToShortURL[originalURL]
 	if !exists {
 		return "", errors.New("short URL not found")
@@ -164,12 +164,12 @@ func (m *URLInMemoryRepo) GetShortURLFromDB(ctx context.Context, originalURL str
 	return shortURL, nil
 }
 
-// StoreBatchURLInDB saves multiple URL mappings in the database in a batch operation.
+// StoreBatchURL saves multiple URL mappings in the database in a batch operation.
 // The input is a map where keys are shortened URLs and values are the corresponding original URLs.
 // It returns an error if the batch saving process fails.
-func (m *URLInMemoryRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
+func (m *URLInMemoryRepo) StoreBatchURL(ctx context.Context, batchURLtoStores map[string]string) error {
 	for shortURL, originalURL := range batchURLtoStores {
-		if err := m.StoreURLInDB(ctx, originalURL, shortURL); err != nil {
+		if err := m.StoreURL(ctx, originalURL, shortURL); err != nil {
 			fmt.Println("Error saving to memory")
 			return err
 		}
@@ -177,11 +177,11 @@ func (m *URLInMemoryRepo) StoreBatchURLInDB(ctx context.Context, batchURLtoStore
 	return nil
 }
 
-// GetShortBatchURLFromDB retrieves multiple shortened URLs corresponding to a batch of original URLs from the database.
+// GetShortBatchURL retrieves multiple shortened URLs corresponding to a batch of original URLs from the database.
 // The input is a slice of URLRequest objects containing original URLs.
 //
 //	It returns found in database a map of original URLs to their shortened counterparts and any error encountered during the retrieval.
-func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
+func (m *URLInMemoryRepo) GetShortBatchURL(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
 	var shortsURL = make(map[string]string, len(batchURLRequests))
 
 	for _, request := range batchURLRequests {
@@ -193,8 +193,8 @@ func (m *URLInMemoryRepo) GetShortBatchURLFromDB(ctx context.Context, batchURLRe
 	return shortsURL, nil
 }
 
-// GetUserURLSFromDB takes a slice of models.URL objects for a specific user from DB
-func (m *URLInMemoryRepo) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
+// GetUserURLS takes a slice of models.URL objects for a specific user from DB
+func (m *URLInMemoryRepo) GetUserURLS(ctx context.Context) ([]models.URL, error) {
 	userID, ok := ctx.Value(models.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Errorf("context value is not userID: %v", userID)
@@ -211,11 +211,10 @@ func (m *URLInMemoryRepo) MarkURLsAsDeleted(ctx context.Context, URLSToDel []str
 	return nil
 }
 
-// Stats returns the statistics of URLs and users stored in the in-memory repository.
-//
+// GetStats returns the statistics of URLs and users stored in the in-memory repository.
 // This method retrieves the count of shortened URLs and unique users from the in-memory repository.
 // It then constructs a Stats struct containing the counts and returns it along with any error encountered.
-func (m *URLInMemoryRepo) Stats(ctx context.Context) (models.Stats, error) {
+func (m *URLInMemoryRepo) GetStats(ctx context.Context) (models.Stats, error) {
 	urls := len(m.shortToOrigURL)
 	users := len(m.usersURLS)
 	stats := models.Stats{Urls: urls, Users: users}

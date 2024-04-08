@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	models "github.com/DenisKhanov/shorterURL/internal/app/models"
+	models "github.com/DenisKhanov/shorterURL/internal/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,9 +36,9 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // GetOriginalURLFromDB mocks base method.
-func (m *MockRepository) GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error) {
+func (m *MockRepository) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOriginalURLFromDB", ctx, shortURL)
+	ret := m.ctrl.Call(m, "GetOriginalURL", ctx, shortURL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -47,13 +47,13 @@ func (m *MockRepository) GetOriginalURLFromDB(ctx context.Context, shortURL stri
 // GetOriginalURLFromDB indicates an expected call of GetOriginalURLFromDB.
 func (mr *MockRepositoryMockRecorder) GetOriginalURLFromDB(ctx, shortURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOriginalURLFromDB", reflect.TypeOf((*MockRepository)(nil).GetOriginalURLFromDB), ctx, shortURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOriginalURL", reflect.TypeOf((*MockRepository)(nil).GetOriginalURL), ctx, shortURL)
 }
 
 // GetShortBatchURLFromDB mocks base method.
-func (m *MockRepository) GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
+func (m *MockRepository) GetShortBatchURL(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetShortBatchURLFromDB", ctx, batchURLRequests)
+	ret := m.ctrl.Call(m, "GetShortBatchURL", ctx, batchURLRequests)
 	ret0, _ := ret[0].(map[string]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -62,13 +62,13 @@ func (m *MockRepository) GetShortBatchURLFromDB(ctx context.Context, batchURLReq
 // GetShortBatchURLFromDB indicates an expected call of GetShortBatchURLFromDB.
 func (mr *MockRepositoryMockRecorder) GetShortBatchURLFromDB(ctx, batchURLRequests interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortBatchURLFromDB", reflect.TypeOf((*MockRepository)(nil).GetShortBatchURLFromDB), ctx, batchURLRequests)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortBatchURL", reflect.TypeOf((*MockRepository)(nil).GetShortBatchURL), ctx, batchURLRequests)
 }
 
 // GetShortURLFromDB mocks base method.
-func (m *MockRepository) GetShortURLFromDB(ctx context.Context, originalURL string) (string, error) {
+func (m *MockRepository) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetShortURLFromDB", ctx, originalURL)
+	ret := m.ctrl.Call(m, "GetShortURL", ctx, originalURL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -77,13 +77,13 @@ func (m *MockRepository) GetShortURLFromDB(ctx context.Context, originalURL stri
 // GetShortURLFromDB indicates an expected call of GetShortURLFromDB.
 func (mr *MockRepositoryMockRecorder) GetShortURLFromDB(ctx, originalURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortURLFromDB", reflect.TypeOf((*MockRepository)(nil).GetShortURLFromDB), ctx, originalURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortURL", reflect.TypeOf((*MockRepository)(nil).GetShortURL), ctx, originalURL)
 }
 
 // GetUserURLSFromDB mocks base method.
-func (m *MockRepository) GetUserURLSFromDB(ctx context.Context) ([]models.URL, error) {
+func (m *MockRepository) GetUserURLS(ctx context.Context) ([]models.URL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserURLSFromDB", ctx)
+	ret := m.ctrl.Call(m, "GetUserURLS", ctx)
 	ret0, _ := ret[0].([]models.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -92,7 +92,7 @@ func (m *MockRepository) GetUserURLSFromDB(ctx context.Context) ([]models.URL, e
 // GetUserURLSFromDB indicates an expected call of GetUserURLSFromDB.
 func (mr *MockRepositoryMockRecorder) GetUserURLSFromDB(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLSFromDB", reflect.TypeOf((*MockRepository)(nil).GetUserURLSFromDB), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLS", reflect.TypeOf((*MockRepository)(nil).GetUserURLS), ctx)
 }
 
 // MarkURLsAsDeleted mocks base method.
@@ -110,9 +110,9 @@ func (mr *MockRepositoryMockRecorder) MarkURLsAsDeleted(ctx, URLSToDel interface
 }
 
 // Stats mocks base method.
-func (m *MockRepository) Stats(ctx context.Context) (models.Stats, error) {
+func (m *MockRepository) GetStats(ctx context.Context) (models.Stats, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stats", ctx)
+	ret := m.ctrl.Call(m, "GetStats", ctx)
 	ret0, _ := ret[0].(models.Stats)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -121,13 +121,13 @@ func (m *MockRepository) Stats(ctx context.Context) (models.Stats, error) {
 // Stats indicates an expected call of Stats.
 func (mr *MockRepositoryMockRecorder) Stats(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stats", reflect.TypeOf((*MockRepository)(nil).Stats), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockRepository)(nil).GetStats), ctx)
 }
 
 // StoreBatchURLInDB mocks base method.
-func (m *MockRepository) StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error {
+func (m *MockRepository) StoreBatchURL(ctx context.Context, batchURLtoStores map[string]string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreBatchURLInDB", ctx, batchURLtoStores)
+	ret := m.ctrl.Call(m, "StoreBatchURL", ctx, batchURLtoStores)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -135,13 +135,13 @@ func (m *MockRepository) StoreBatchURLInDB(ctx context.Context, batchURLtoStores
 // StoreBatchURLInDB indicates an expected call of StoreBatchURLInDB.
 func (mr *MockRepositoryMockRecorder) StoreBatchURLInDB(ctx, batchURLtoStores interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreBatchURLInDB", reflect.TypeOf((*MockRepository)(nil).StoreBatchURLInDB), ctx, batchURLtoStores)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreBatchURL", reflect.TypeOf((*MockRepository)(nil).StoreBatchURL), ctx, batchURLtoStores)
 }
 
 // StoreURLInDB mocks base method.
-func (m *MockRepository) StoreURLInDB(ctx context.Context, originalURL, shortURL string) error {
+func (m *MockRepository) StoreURL(ctx context.Context, originalURL, shortURL string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreURLInDB", ctx, originalURL, shortURL)
+	ret := m.ctrl.Call(m, "StoreURL", ctx, originalURL, shortURL)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -149,7 +149,7 @@ func (m *MockRepository) StoreURLInDB(ctx context.Context, originalURL, shortURL
 // StoreURLInDB indicates an expected call of StoreURLInDB.
 func (mr *MockRepositoryMockRecorder) StoreURLInDB(ctx, originalURL, shortURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLInDB", reflect.TypeOf((*MockRepository)(nil).StoreURLInDB), ctx, originalURL, shortURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURL", reflect.TypeOf((*MockRepository)(nil).StoreURL), ctx, originalURL, shortURL)
 }
 
 // MockEncoder is a mock of Encoder interface.

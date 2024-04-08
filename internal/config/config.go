@@ -24,7 +24,7 @@ type ENVConfig struct {
 }
 
 // NewConfig creates a new ENVConfig instance by parsing command line flags and environment variables.
-func NewConfig() *ENVConfig {
+func NewConfig() (*ENVConfig, error) {
 	var cfg ENVConfig
 
 	flag.StringVar(&cfg.ConfigFile, "c", "", "Path to the configuration file")
@@ -46,19 +46,26 @@ func NewConfig() *ENVConfig {
 	flag.Parse()
 
 	// Parse config from JSON file if provided
-	if cfgFile := getConfigFilePath(); cfgFile != "" {
-		if err := setConfigFromFile(cfgFile, &cfg); err != nil {
-			logrus.Fatal(err)
+	if cfgFilePath := getConfigFilePath(); cfgFilePath != "" {
+		if err := setConfigFromFile(cfgFilePath, &cfg); err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+	} else if cfg.ConfigFile != "" {
+		if err := setConfigFromFile(cfg.ConfigFile, &cfg); err != nil {
+			logrus.Error(err)
+			return nil, err
 		}
 	}
 
 	// Parse environment variables.
 	err := env.Parse(&cfg)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Error(err)
+		return nil, err
 	}
 
-	return &cfg
+	return &cfg, nil
 }
 
 // getConfigFilePath returns the path to the config file specified by the -c flag or the CONFIG environment variable.

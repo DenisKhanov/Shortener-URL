@@ -5,8 +5,9 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
-	"github.com/DenisKhanov/shorterURL/internal/app/auth"
-	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/DenisKhanov/shorterURL/internal/auth"
+	"github.com/DenisKhanov/shorterURL/internal/models"
+	"github.com/DenisKhanov/shorterURL/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -45,6 +46,8 @@ type Service interface {
 	// ServiceStats retrieves the statistics of URLs and users from the service's repository.
 	ServiceStats(ctx context.Context) (models.Stats, error)
 }
+
+var _ Service = (*services.ShortURLServices)(nil)
 
 // Handlers is a struct that contains HTTP request handlers and a database connection pool.
 type Handlers struct {

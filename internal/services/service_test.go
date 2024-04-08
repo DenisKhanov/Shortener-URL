@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/DenisKhanov/shorterURL/internal/app/models"
-	"github.com/DenisKhanov/shorterURL/internal/app/services/mocks"
+	"github.com/DenisKhanov/shorterURL/internal/models"
+	"github.com/DenisKhanov/shorterURL/internal/services/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"strings"

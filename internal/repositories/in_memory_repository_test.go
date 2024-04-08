@@ -3,7 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
-	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/DenisKhanov/shorterURL/internal/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -41,7 +41,7 @@ func TestNewRepository(t *testing.T) {
 	}
 }
 
-func TestRepositoryURL_GetOriginalURLFromDB(t *testing.T) {
+func TestRepositoryURL_GetOriginalURL(t *testing.T) {
 	type fields struct {
 		shortToOrigURL map[string]string
 		origToShortURL map[string]string
@@ -76,16 +76,16 @@ func TestRepositoryURL_GetOriginalURLFromDB(t *testing.T) {
 				shortToOrigURL: tt.fields.shortToOrigURL,
 				origToShortURL: tt.fields.origToShortURL,
 			}
-			got, err := d.GetOriginalURLFromDB(tt.args.ctx, tt.args.shortURL)
-			if !tt.wantErr(t, err, fmt.Sprintf("GetOriginalURLFromDB(%v)", tt.args.shortURL)) {
+			got, err := d.GetOriginalURL(tt.args.ctx, tt.args.shortURL)
+			if !tt.wantErr(t, err, fmt.Sprintf("GetOriginalURL(%v)", tt.args.shortURL)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "GetOriginalURLFromDB(%v)", tt.args.shortURL)
+			assert.Equalf(t, tt.want, got, "GetOriginalURL(%v)", tt.args.shortURL)
 		})
 	}
 }
 
-func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
+func TestRepositoryURL_GetShortURL(t *testing.T) {
 	type fields struct {
 		shortToOrigURL map[string]string
 		origToShortURL map[string]string
@@ -120,11 +120,11 @@ func TestRepositoryURL_GetShortURLFromDB(t *testing.T) {
 				shortToOrigURL: tt.fields.shortToOrigURL,
 				origToShortURL: tt.fields.origToShortURL,
 			}
-			got, err := d.GetShortURLFromDB(tt.args.ctx, tt.args.originalURL)
-			if !tt.wantErr(t, err, fmt.Sprintf("GetShortURLFromDB(%v)", tt.args.originalURL)) {
+			got, err := d.GetShortURL(tt.args.ctx, tt.args.originalURL)
+			if !tt.wantErr(t, err, fmt.Sprintf("GetShortURL(%v)", tt.args.originalURL)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "GetShortURLFromDB(%v)", tt.args.originalURL)
+			assert.Equalf(t, tt.want, got, "GetShortURL(%v)", tt.args.originalURL)
 		})
 	}
 }
@@ -231,7 +231,7 @@ func TestURLInMemoryRepo_SaveBatchToFile(t *testing.T) {
 	}
 }
 
-func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
+func TestURLInMemoryRepo_StoreURLS(t *testing.T) {
 	type fields struct {
 		shortToOrigURL  map[string]string
 		origToShortURL  map[string]string
@@ -286,7 +286,7 @@ func TestURLInMemoryRepo_StoreURLSInDB(t *testing.T) {
 				batchSize:       tt.fields.batchSize,
 				storageFilePath: tt.fields.storageFilePath,
 			}
-			tt.wantErr(t, m.StoreURLInDB(tt.args.ctx, tt.args.originalURL, tt.args.shortURL), fmt.Sprintf("StoreURLInDB(%v, %v)", tt.args.originalURL, tt.args.shortURL))
+			tt.wantErr(t, m.StoreURL(tt.args.ctx, tt.args.originalURL, tt.args.shortURL), fmt.Sprintf("StoreURL(%v, %v)", tt.args.originalURL, tt.args.shortURL))
 			defer os.Remove(tt.fields.storageFilePath)
 		})
 	}
@@ -306,7 +306,7 @@ func createTempFilePath(t *testing.T) string {
 	return tempPath
 }
 
-func TestURLInMemoryRepo_StoreBatchURLInDB(t *testing.T) {
+func TestURLInMemoryRepo_StoreBatchURL(t *testing.T) {
 	tests := []struct {
 		name             string
 		batchURLtoStores map[string]string
@@ -339,7 +339,7 @@ func TestURLInMemoryRepo_StoreBatchURLInDB(t *testing.T) {
 			// Создаем репозиторий
 			repo := NewURLInMemoryRepo(tempFile.Name())
 			// Call the method under test
-			err = repo.StoreBatchURLInDB(ctx, tt.batchURLtoStores)
+			err = repo.StoreBatchURL(ctx, tt.batchURLtoStores)
 
 			// Check the result
 			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
@@ -352,7 +352,7 @@ func TestURLInMemoryRepo_StoreBatchURLInDB(t *testing.T) {
 	}
 }
 
-func TestURLInMemoryRepo_GetShortBatchURLFromDB(t *testing.T) {
+func TestURLInMemoryRepo_GetShortBatchURL(t *testing.T) {
 	tests := []struct {
 		name              string
 		batchURLRequests  []models.URLRequest
@@ -393,12 +393,12 @@ func TestURLInMemoryRepo_GetShortBatchURLFromDB(t *testing.T) {
 			// Добавляем тестовые URL в репозиторий
 			for i, req := range tt.batchURLRequests {
 				shortURL := fmt.Sprintf("short%d", i+1)
-				err := repo.StoreURLInDB(context.Background(), req.OriginalURL, shortURL)
+				err := repo.StoreURL(context.Background(), req.OriginalURL, shortURL)
 				assert.NoError(t, err)
 			}
 
 			// Вызываем метод, который мы тестируем
-			shortURLs, err := repo.GetShortBatchURLFromDB(context.Background(), tt.batchURLRequests)
+			shortURLs, err := repo.GetShortBatchURL(context.Background(), tt.batchURLRequests)
 
 			// Проверяем ошибку
 			assert.Equal(t, tt.expectedErr, err != nil)
@@ -410,7 +410,7 @@ func TestURLInMemoryRepo_GetShortBatchURLFromDB(t *testing.T) {
 	}
 }
 
-func TestURLInMemoryRepo_GetUserURLSFromDB(t *testing.T) {
+func TestURLInMemoryRepo_GetUserURLS(t *testing.T) {
 	tests := []struct {
 		name        string
 		userID      uuid.UUID
@@ -449,11 +449,11 @@ func TestURLInMemoryRepo_GetUserURLSFromDB(t *testing.T) {
 			ctx := context.WithValue(context.Background(), models.UserIDKey, tt.userID)
 
 			// Добавляем тестовый URL для пользователя
-			err = repo.StoreURLInDB(ctx, "http://example.com", "http://short.com")
+			err = repo.StoreURL(ctx, "http://example.com", "http://short.com")
 			assert.NoError(t, err)
 
 			// Вызываем метод, который мы тестируем
-			userURLs, err := repo.GetUserURLSFromDB(ctx)
+			userURLs, err := repo.GetUserURLS(ctx)
 
 			// Проверяем ошибку
 			assert.Equal(t, tt.expectedErr, err != nil)

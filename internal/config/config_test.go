@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -16,6 +17,7 @@ func TestNewConfig(t *testing.T) {
 		envVars        map[string]string
 		flagArgs       []string
 		expectedConfig *ENVConfig
+		expectedError  error
 	}{
 		{
 			name: "default values",
@@ -62,6 +64,26 @@ func TestNewConfig(t *testing.T) {
 				EnvDataBase:    "flags",
 			},
 		},
+		{
+			name: "flag -c error find file",
+			flagArgs: []string{
+				"-c", "/c",
+				"-b", "http://localhost:7070",
+				"-f", "/tmp/flag-test.json",
+				"-l", "error",
+				"-d", "flags",
+			},
+			expectedConfig: nil,
+			expectedError:  errors.New("open /c: The system cannot find the file specified."),
+		},
+		{
+			name: "env CONFIG -c error find file",
+			envVars: map[string]string{
+				"CONFIG": "/c",
+			},
+			expectedConfig: nil,
+			expectedError:  errors.New("open /c: The system cannot find the file specified."),
+		},
 	}
 
 	for _, tt := range tests {
@@ -85,10 +107,13 @@ func TestNewConfig(t *testing.T) {
 			os.Args = append([]string{"cmd"}, tt.flagArgs...)
 
 			// Call the function under test
-			gotConfig := NewConfig()
-
+			gotConfig, err := NewConfig()
+			if err != nil {
+				assert.EqualError(t, tt.expectedError, err.Error())
+			}
 			// Assert the result
 			assert.Equal(t, tt.expectedConfig, gotConfig)
+
 		})
 	}
 }

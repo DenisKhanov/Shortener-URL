@@ -6,7 +6,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
-	"github.com/DenisKhanov/shorterURL/internal/app/models"
+	"github.com/DenisKhanov/shorterURL/internal/models"
+	"github.com/DenisKhanov/shorterURL/internal/repositories"
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"time"
@@ -16,32 +17,33 @@ import (
 //
 //go:generate mockgen -source=service.go -destination=mocks/service_mock.go -package=mocks
 type Repository interface {
-	// StoreURLInDB saves a mapping between an original URL and its shortened version in the database.
+	// StoreURL saves a mapping between an original URL and its shortened version in the database.
 	// It returns an error if the saving process fails.
-	StoreURLInDB(ctx context.Context, originalURL, shortURL string) error
-	// GetShortURLFromDB retrieves the shortened version of a given original URL from the database.
+	StoreURL(ctx context.Context, originalURL, shortURL string) error
+	// GetShortURL retrieves the shortened version of a given original URL from the database.
 	// It returns the shortened URL and any error encountered during the retrieval.
-	GetShortURLFromDB(ctx context.Context, originalURL string) (string, error)
-	// GetOriginalURLFromDB retrieves the original URL corresponding to a given shortened URL from the database.
+	GetShortURL(ctx context.Context, originalURL string) (string, error)
+	// GetOriginalURL retrieves the original URL corresponding to a given shortened URL from the database.
 	// It returns the original URL and any error encountered during the retrieval.
-	GetOriginalURLFromDB(ctx context.Context, shortURL string) (string, error)
-	// StoreBatchURLInDB saves multiple URL mappings in the database in a batch operation.
+	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
+	// StoreBatchURL saves multiple URL mappings in the database in a batch operation.
 	// The input is a map where keys are shortened URLs and values are the corresponding original URLs.
 	// It returns an error if the batch saving process fails.
-	StoreBatchURLInDB(ctx context.Context, batchURLtoStores map[string]string) error
-	// GetShortBatchURLFromDB retrieves multiple shortened URLs corresponding to a batch of original URLs from the database.
+	StoreBatchURL(ctx context.Context, batchURLtoStores map[string]string) error
+	// GetShortBatchURL retrieves multiple shortened URLs corresponding to a batch of original URLs from the database.
 	// The input is a slice of URLRequest objects containing original URLs.
 	//  It returns found in database a map of original URLs to their shortened counterparts and any error encountered during the retrieval.
-	GetShortBatchURLFromDB(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error)
-	// GetUserURLSFromDB takes a slice of models.URL objects for a specific user from DB
-	GetUserURLSFromDB(ctx context.Context) ([]models.URL, error)
+	GetShortBatchURL(ctx context.Context, batchURLRequests []models.URLRequest) (map[string]string, error)
+	// GetUserURLS takes a slice of models.URL objects for a specific user from DB
+	GetUserURLS(ctx context.Context) ([]models.URL, error)
 	// MarkURLsAsDeleted marks user URLs as deleted in DB
 	MarkURLsAsDeleted(ctx context.Context, URLSToDel []string) error
-	// Stats retrieves the statistics of URLs and users from the database.
-	Stats(ctx context.Context) (models.Stats, error)
+	// GetStats retrieves the statistics of URLs and users from the database.
+	GetStats(ctx context.Context) (models.Stats, error)
 }
 
-//TODO добавить проверку интерфейсов
+var _ Repository = (*repositories.URLInMemoryRepo)(nil)
+var _ Repository = (*repositories.URLInDBRepo)(nil)
 
 // Encoder defines the interface for encoding unique short URLs.
 type Encoder interface {
@@ -88,7 +90,7 @@ func (s ShortURLServices) finalURLBuilder(shortURL string) string {
 // This method is intended for processing multiple URLs at once, improving efficiency for bulk operations.
 // Returns an error if any of the URLs cannot be processed or if an internal error occurs.
 func (s ShortURLServices) GetBatchShortURL(ctx context.Context, batchURLRequests []models.URLRequest) ([]models.URLResponse, error) {
-	shortsURL, err := s.repository.GetShortBatchURLFromDB(ctx, batchURLRequests)
+	shortsURL, err := s.repository.GetShortBatchURL(ctx, batchURLRequests)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -105,7 +107,7 @@ func (s ShortURLServices) GetBatchShortURL(ctx context.Context, batchURLRequests
 		}
 	}
 
-	err = s.repository.StoreBatchURLInDB(ctx, batchURLtoStores)
+	err = s.repository.StoreBatchURL(ctx, batchURLtoStores)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -118,10 +120,10 @@ func (s ShortURLServices) GetBatchShortURL(ctx context.Context, batchURLRequests
 // If the URL is new, it generates a new shortened URL.
 // Returns an error if the URL cannot be shortened or if any internal error occurs.
 func (s ShortURLServices) GetShortURL(ctx context.Context, URL string) (string, error) {
-	shortURL, err := s.repository.GetShortURLFromDB(ctx, URL)
+	shortURL, err := s.repository.GetShortURL(ctx, URL)
 	if err != nil {
 		shortURL = s.encoder.CryptoBase62Encode()
-		err = s.repository.StoreURLInDB(ctx, URL, shortURL)
+		err = s.repository.StoreURL(ctx, URL, shortURL)
 		if err != nil {
 			return "", err
 		}
@@ -134,7 +136,7 @@ func (s ShortURLServices) GetShortURL(ctx context.Context, URL string) (string, 
 // If the shortened URL does not exist or is invalid, an error is returned.
 // Useful for redirecting shortened URLs to their original destinations.
 func (s ShortURLServices) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
-	originURL, err := s.repository.GetOriginalURLFromDB(ctx, shortURL)
+	originURL, err := s.repository.GetOriginalURL(ctx, shortURL)
 	if err != nil {
 		return "", err
 	}
@@ -143,7 +145,7 @@ func (s ShortURLServices) GetOriginalURL(ctx context.Context, shortURL string) (
 
 // GetUserURLS takes a slice of models.URL objects for a specific user
 func (s ShortURLServices) GetUserURLS(ctx context.Context) ([]models.URL, error) {
-	userURLS, err := s.repository.GetUserURLSFromDB(ctx)
+	userURLS, err := s.repository.GetUserURLS(ctx)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -169,10 +171,10 @@ func (s ShortURLServices) AsyncDeleteUserURLs(ctx context.Context, URLSToDel []s
 
 // ServiceStats retrieves the statistics of URLs and users from the service's repository.
 //
-// This method delegates the retrieval of statistics to the repository's Stats method.
+// This method delegates the retrieval of statistics to the repository's GetStats method.
 // It then returns the obtained statistics and any error encountered during the retrieval process.
 func (s ShortURLServices) ServiceStats(ctx context.Context) (models.Stats, error) {
-	stats, err := s.repository.Stats(ctx)
+	stats, err := s.repository.GetStats(ctx)
 	if err != nil {
 		return models.Stats{}, err
 	}
