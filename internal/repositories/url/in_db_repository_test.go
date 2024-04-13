@@ -16,7 +16,7 @@ func TestNewURLInDBRepo(t *testing.T) {
 	defer db.Close()
 
 	// Вызываем функцию, которую хотим протестировать
-	repo, err := NewURLInDBRepo(db)
+	repo, _ := NewURLInDBRepo(db)
 
 	// Проверяем, что UserID был инициализирован как uuid.Nil
 	if repo.UserID != uuid.Nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/DenisKhanov/shorterURL/internal/logcfg"
 	"github.com/DenisKhanov/shorterURL/internal/models"
 	"github.com/DenisKhanov/shorterURL/internal/services/url"
-	"github.com/DenisKhanov/shorterURL/internal/tls_generator"
+	"github.com/DenisKhanov/shorterURL/internal/tls"
 	proto "github.com/DenisKhanov/shorterURL/pkg/shortener_v1"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -210,7 +210,7 @@ func (a *App) runShortenerServers() {
 	go func() {
 		if a.config.EnvTLS != "" {
 			logrus.Infof("Starting server HTTP with TLS on: %s", a.config.EnvServAdr)
-			_, err := tls_generator.NewTLS()
+			_, err := tls.NewTLS()
 			if err != nil {
 				logrus.WithError(err).Error("Error generate TLS")
 			}

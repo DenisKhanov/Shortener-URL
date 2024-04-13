@@ -1,6 +1,6 @@
-// Package tls_generator provides functionality for generating self-signed TLS certificates and private keys,
+// Package tls provides functionality for generating self-signed TLS certificates and private keys,
 // and saving them to files for use in TLS server configurations.
-package tls_generator
+package tls
 
 import (
 	"bytes"
