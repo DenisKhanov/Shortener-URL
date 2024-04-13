@@ -27,6 +27,7 @@ func TestNewConfig(t *testing.T) {
 				EnvStoragePath: "/tmp/short-url-db.json",
 				EnvLogLevel:    "info",
 				EnvDataBase:    "",
+				EnvGRPC:        ":3200",
 			},
 		},
 		{
@@ -37,6 +38,9 @@ func TestNewConfig(t *testing.T) {
 				"FILE_STORAGE_PATH": "/tmp/test.json",
 				"LOG_LEVEL":         "debug",
 				"DATABASE_DSN":      "environment",
+				"ENABLE_TLS":        "disable",
+				"TRUSTED_SUBNET":    "1.1.1.1",
+				"GRPC_SERVER":       ":3000",
 			},
 			flagArgs: []string{},
 			expectedConfig: &ENVConfig{
@@ -45,6 +49,9 @@ func TestNewConfig(t *testing.T) {
 				EnvStoragePath: "/tmp/test.json",
 				EnvLogLevel:    "debug",
 				EnvDataBase:    "environment",
+				EnvTLS:         "disable",
+				EnvSubnet:      "1.1.1.1",
+				EnvGRPC:        ":3000",
 			},
 		},
 		{
@@ -55,6 +62,9 @@ func TestNewConfig(t *testing.T) {
 				"-f", "/tmp/flag-test.json",
 				"-l", "error",
 				"-d", "flags",
+				"-s", "enable",
+				"-t", "2.2.2.2",
+				"-g", ":1000",
 			},
 			expectedConfig: &ENVConfig{
 				EnvServAdr:     "localhost:7070",
@@ -62,6 +72,9 @@ func TestNewConfig(t *testing.T) {
 				EnvStoragePath: "/tmp/flag-test.json",
 				EnvLogLevel:    "error",
 				EnvDataBase:    "flags",
+				EnvTLS:         "enable",
+				EnvSubnet:      "2.2.2.2",
+				EnvGRPC:        ":1000",
 			},
 		},
 		{
@@ -151,9 +164,9 @@ func TestPrintProjectInfo(t *testing.T) {
 
 	// Expected output
 	expectedOutput := fmt.Sprintf("Build version: %s\nBuild date: %s\nBuild commit: %s\n",
-		getValueOrDefault(buildVersion, "N/A"),
-		getValueOrDefault(buildDate, "N/A"),
-		getValueOrDefault(buildCommit, "N/A"))
+		getValueOrDefault(buildVersion, "2.0"),
+		getValueOrDefault(buildDate, "13.04.2024"),
+		getValueOrDefault(buildCommit, "Clean architect"))
 
 	// Check if the printed output matches the expected output
 	if buf.String() != expectedOutput {

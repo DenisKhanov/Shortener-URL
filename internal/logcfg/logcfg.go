@@ -40,7 +40,7 @@ func RunLoggerConfig(EnvLogsLevel string) {
 
 	// Configure log file rotation using lumberjack
 	mw := io.MultiWriter(os.Stdout, &lumberjack.Logger{
-		Filename:   "shortener.log",
+		Filename:   "http_shortener.log",
 		MaxSize:    50,
 		MaxBackups: 3,
 		MaxAge:     30,

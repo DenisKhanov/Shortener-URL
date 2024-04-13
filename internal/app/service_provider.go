@@ -1,17 +1,20 @@
 package app
 
 import (
-	"github.com/DenisKhanov/shorterURL/internal/handlers"
-	"github.com/DenisKhanov/shorterURL/internal/repositories"
-	"github.com/DenisKhanov/shorterURL/internal/services"
+	url3 "github.com/DenisKhanov/shorterURL/internal/api/grpc/url"
+	url4 "github.com/DenisKhanov/shorterURL/internal/api/http/url"
+	url2 "github.com/DenisKhanov/shorterURL/internal/repositories/url"
+	"github.com/DenisKhanov/shorterURL/internal/services/url"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sirupsen/logrus"
 )
 
-// serviceProvider manages the dependency injection for user-related components.
+// serviceProvider manages the dependency injection for http_shortener-related components.
 type serviceProvider struct {
-	userRepository services.Repository // Repository for user-related data
-	userService    handlers.Service    // Service for user-related operations
-	userHandler    *handlers.Handlers  // Handler for user-related HTTP endpoints
+	shortenerRepository url.Repository        // Repository for http_shortener-related data
+	shortenerService    url4.Service          // Service for http_shortener-related operations
+	shortenerHandler    *url4.Handlers        // Handler for http_shortener-related HTTP endpoints
+	shortenerGRPC       *url3.ShortenerServer //GRPC for http_shortener-related operations
 }
 
 // newServiceProvider creates a new instance of the service provider.
@@ -19,39 +22,49 @@ func newServiceProvider() *serviceProvider {
 	return &serviceProvider{}
 }
 
-// UserRepository returns the repository for user-related data.
+// ShortenerRepository returns the repository for user-related data.
 // If dbPool is nil, it initializes an in-memory repository, otherwise initializes a database repository.
-func (s *serviceProvider) UserRepository(dbPool *pgxpool.Pool, storagePath string) services.Repository {
-	if s.userRepository == nil {
+func (s *serviceProvider) ShortenerRepository(dbPool *pgxpool.Pool, storagePath string) url.Repository {
+	var err error
+	if s.shortenerRepository == nil {
 		if dbPool == nil {
-			s.userRepository = repositories.NewURLInMemoryRepo(storagePath)
+			s.shortenerRepository = url2.NewURLInMemoryRepo(storagePath)
 		} else {
-			s.userRepository = repositories.NewURLInDBRepo(dbPool)
+			if s.shortenerRepository, err = url2.NewURLInDBRepo(dbPool); err != nil {
+				//TODO лучше вернуть ошибку из метода и обработать ее выше
+				logrus.Fatal(err)
+			}
 		}
 	}
-	return s.userRepository
+	return s.shortenerRepository
 }
 
-// UserService returns the service for user-related operations.
-func (s *serviceProvider) UserService(dbPool *pgxpool.Pool, baseUrl, storagePath string) handlers.Service {
-	if s.userService == nil {
-		s.userService = services.NewShortURLServices(
-			s.UserRepository(dbPool, storagePath),
-			services.ShortURLServices{},
+// ShortenerService returns the service for user-related operations.
+func (s *serviceProvider) ShortenerService(dbPool *pgxpool.Pool, baseUrl, storagePath string) url4.Service {
+	if s.shortenerService == nil {
+		s.shortenerService = url.NewShortURLServices(
+			s.ShortenerRepository(dbPool, storagePath),
+			url.ShortURLServices{},
 			baseUrl,
 		)
 	}
-	return s.userService
+	return s.shortenerService
 }
 
-// UserHandler returns the handler for user-related HTTP endpoints.
-func (s *serviceProvider) UserHandler(dbPool *pgxpool.Pool, baseUrl, storagePath, subnetsStr string) (*handlers.Handlers, error) {
-	if s.userHandler == nil {
-		userHandler, err := handlers.NewHandlers(s.UserService(dbPool, baseUrl, storagePath), dbPool, subnetsStr)
-		if err != nil {
-			return nil, err
-		}
-		s.userHandler = userHandler
+// ShortenerHandler returns the handler for user-related HTTP endpoints.
+func (s *serviceProvider) ShortenerHandler(dbPool *pgxpool.Pool, baseUrl, storagePath, subnetsStr string) *url4.Handlers {
+	if s.shortenerHandler == nil {
+		userHandler := url4.NewHandlers(s.ShortenerService(dbPool, baseUrl, storagePath), subnetsStr)
+		s.shortenerHandler = userHandler
 	}
-	return s.userHandler, nil
+	return s.shortenerHandler
+}
+
+// ShortenerGRPC returns the handler for user-related HTTP endpoints.
+func (s *serviceProvider) ShortenerGRPC() *url3.ShortenerServer {
+	if s.shortenerGRPC == nil {
+		shortenerGRPC := url3.NewShortenerServer(s.shortenerService)
+		s.shortenerGRPC = shortenerGRPC
+	}
+	return s.shortenerGRPC
 }

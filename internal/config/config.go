@@ -19,29 +19,33 @@ type ENVConfig struct {
 	EnvStoragePath string `env:"FILE_STORAGE_PATH"`
 	EnvLogLevel    string `env:"LOG_LEVEL"`
 	EnvDataBase    string `env:"DATABASE_DSN"`
-	EnvHTTPS       string `env:"ENABLE_HTTPS"`
+	EnvTLS         string `env:"ENABLE_TLS"`
 	EnvSubnet      string `env:"TRUSTED_SUBNET"`
+	EnvGRPC        string `env:"GRPC_SERVER"`
 }
 
 // NewConfig creates a new ENVConfig instance by parsing command line flags and environment variables.
 func NewConfig() (*ENVConfig, error) {
 	var cfg ENVConfig
 
-	flag.StringVar(&cfg.ConfigFile, "c", "", "Path to the configuration file")
+	flag.StringVar(&cfg.ConfigFile, "c", "", "Enter path to config file Or use CONFIG env")
 
-	flag.StringVar(&cfg.EnvServAdr, "a", "localhost:8080", "HTTP server address")
+	flag.StringVar(&cfg.EnvServAdr, "a", "localhost:8080", "Enter URLServer as ip_address:port or use SERVER_ADDRESS env")
 
-	flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
+	flag.StringVar(&cfg.EnvBaseURL, "b", "http://localhost:8080", "Enter URLPrefix as http://ip_address:port or use BASE_URL env")
 
-	flag.StringVar(&cfg.EnvStoragePath, "f", "/tmp/short-url-db.json", "Path for saving data file")
+	flag.StringVar(&cfg.EnvStoragePath, "f", "/tmp/short-url-db.json", "Enter path for saving data file or use FILE_STORAGE_PATH env")
 
-	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Set logg level")
+	flag.StringVar(&cfg.EnvLogLevel, "l", "info", "Enter logg level or use LOG_LEVEL env")
 
-	flag.StringVar(&cfg.EnvDataBase, "d", "", "Set connect DB config")
+	flag.StringVar(&cfg.EnvDataBase, "d", "", "Enter url to connect database as host=host port=port user=postgres password=postgres "+
+		"dbname=dbname sslmode=disable or use DATABASE_DSN env")
 
-	flag.StringVar(&cfg.EnvHTTPS, "s", "", "Set HTTPS on enable")
+	flag.StringVar(&cfg.EnvTLS, "s", "", "Enter TLS on enable or disable")
 
-	flag.StringVar(&cfg.EnvSubnet, "t", "", "Use trusted subnet")
+	flag.StringVar(&cfg.EnvSubnet, "t", "", "Enter trusted subnet or use TRUSTED_SUBNET env")
+
+	flag.StringVar(&cfg.EnvGRPC, "g", ":3200", "Enter gRPC server address or use GRPC_SERVER env")
 
 	flag.Parse()
 
@@ -110,9 +114,12 @@ func setConfigFromFile(path string, cfg1 *ENVConfig) error {
 	}
 
 	if flag.Lookup("s") == nil {
-		cfg1.EnvHTTPS = cfgFromFile.EnvHTTPS
+		cfg1.EnvTLS = cfgFromFile.EnvTLS
 	}
 	if flag.Lookup("t") == nil {
+		cfg1.EnvSubnet = cfgFromFile.EnvSubnet
+	}
+	if flag.Lookup("g") == nil {
 		cfg1.EnvSubnet = cfgFromFile.EnvSubnet
 	}
 	return nil
@@ -134,7 +141,7 @@ func getValueOrDefault(value, defaultValue string) string {
 
 // PrintProjectInfo print info (version,date,commit) about build.
 func PrintProjectInfo() {
-	fmt.Printf("Build version: %s\n", getValueOrDefault(buildVersion, "N/A"))
-	fmt.Printf("Build date: %s\n", getValueOrDefault(buildDate, "N/A"))
-	fmt.Printf("Build commit: %s\n", getValueOrDefault(buildCommit, "N/A"))
+	fmt.Printf("Build version: %s\n", getValueOrDefault(buildVersion, "2.0"))
+	fmt.Printf("Build date: %s\n", getValueOrDefault(buildDate, "13.04.2024"))
+	fmt.Printf("Build commit: %s\n", getValueOrDefault(buildCommit, "Clean architect"))
 }

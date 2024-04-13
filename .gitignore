@@ -12,8 +12,8 @@
 *.out
 
 # Binaries
-cmd/shortener/main
-cmd/shortener/shortener
+cmd/http_shortener/main
+cmd/http_shortener/shortener
 
 # Dependency directories (remove the comment below to include it)
 vendor/

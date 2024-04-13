@@ -21,8 +21,8 @@ type URL struct {
 
 // Stats represent service info count
 type Stats struct {
-	Urls  int `json:"urls"`
-	Users int `json:"users"`
+	CountURLs  uint32 `json:"urls"`
+	CountUsers uint32 `json:"users"`
 }
 
 // CTXKey is the type used as a context key for storing user ID.
@@ -30,6 +30,7 @@ type CTXKey string
 
 // All constants used in project
 const (
+	TokenKey      CTXKey = "token"          // TokenKey is the specific key used in the context to store token.
 	UserIDKey     CTXKey = "userID"         // UserIDKey is the specific key used in the context to store user ID.
 	CertPEM       string = "cert.pem"       // CertPEM is the file name for TLS cert
 	PrivateKeyPEM string = "privateKey.pem" // PrivateKeyPEM is the file name for TLS private key
