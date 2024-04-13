@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package shortener_v1;
+
+option go_package = "github.com/DenisKhanov/shorterURL/pkg/shortener_v1;shortener_v1";
+
+
+service Shortener_v1 {
+  rpc GetShortURL(GetShortURLRequest) returns (GetShortURLResponse);
+  rpc GetOriginalURL(GetOriginalURLRequest) returns (GetOriginalURLResponse);
+  rpc GetBatchShortURL(GetBatchShortURLRequest) returns (GetBatchShortURLResponse);
+  rpc GetUserURLs(GetUserURLsRequest) returns (GetUserURLsResponse);
+  rpc DelUserURLs(DelUserURLsRequest) returns (DelUserURLsResponse);
+  rpc GetServiceStats(GetServiceStatsRequest) returns (GetServiceStatsResponse);
+  rpc GetStorageStatus(GetStorageStatusRequest) returns (GetStorageStatusResponse);
+
+}
+
+message GetShortURLRequest {
+  string original_url = 1;
+}
+
+message GetShortURLResponse {
+  string short_url = 1;
+}
+
+message GetOriginalURLRequest {
+  string short_url = 1;
+}
+
+message GetOriginalURLResponse {
+  string original_url = 1;
+}
+
+message URLRequest{
+  string correlation_id = 1;
+  string original_url = 2;
+}
+message GetBatchShortURLRequest {
+  repeated URLRequest batch_url_requests = 1;
+}
+
+message URLResponse{
+  string correlation_id = 1;
+  string short_url = 2;
+}
+message GetBatchShortURLResponse {
+  repeated URLResponse batch_url_responses = 1;
+}
+
+
+
+message GetUserURLsRequest {}
+
+message URL {
+  string short_url = 1;
+  string original_url = 2;
+}
+message GetUserURLsResponse {
+  repeated URL user_urls = 1;
+}
+
+message DelUserURLsRequest {
+  repeated string urls_to_del = 1;
+}
+
+message DelUserURLsResponse {
+}
+
+message GetServiceStatsRequest {}
+
+message Stats{
+  uint32 count_urls = 1;
+  uint32 count_users = 2;
+}
+message GetServiceStatsResponse {
+  Stats stats = 1;
+}
+
+message GetStorageStatusRequest {}
+
+message GetStorageStatusResponse {}
+
