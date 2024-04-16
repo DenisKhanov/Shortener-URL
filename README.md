@@ -1,58 +1,54 @@
+# RU
 # Сокращатель ссылок - Shortener URL
 
-Сокращатель ссылок - это проект, разработанный мною как часть моей учебной программы Яндекс Практикума. Этот сервис позволяет пользователям сокращать длинные URL-адреса до более удобного формата, облегчая их использование и распространение.
+ - Сокращатель ссылок - это проект, разработанный мною как часть моей учебной программы Яндекс Практикума. Этот сервис позволяет пользователям сокращать длинные URL-адреса до более удобного формата, облегчая      их использование и распространение.
 
-Для взаимодействия с сервисом предоставляется [HTTP API](./api.md).
+Технологии:
+
+<div >
+
+<img src="https://github.com/devicons/devicon/blob/master/icons/go/go-original.svg" title="Go" alt="Go" width="40"/>&nbsp;
+<img src="rest-api-blue-logo-22099.svg"  title="REST API" alt="REST API" width="40" height="40"/>&nbsp;
+<img src="Gin-Framework.svg" title="GIN" alt="GIN" width="40"/>&nbsp;
+<img src="https://github.com/devicons/devicon/blob/master/icons/grpc/grpc-original.svg" title="gRPC" alt="gRPC" width="40"/>&nbsp;
+<img src="https://github.com/devicons/devicon/blob/master/icons/postgresql/postgresql-original.svg" title="PostgreSQL" alt="PostgreSQL" width="40" height="40"/>&nbsp;
+<img src="https://github.com/devicons/devicon/blob/master/icons/docker/docker-original.svg"  title="Docker" alt="Docker" width="40" height="40"/>&nbsp;
+<img src="https://github.com/devicons/devicon/blob/master/icons/github/github-original.svg"  title="GitHUB" alt="GitHUB" width="40" height="40"/>&nbsp;
 
 
-# RU
-# Сокращатель Ссылок  
-Сокращатель ссылок - это проект, разработанный как часть моей учебной программы Яндекс Практикума. Этот сервис позволяет пользователям сокращать длинные URL-адреса до более удобного формата, облегчая их использование и распространение.
+</div>
 
-Основные Функции  
-Сокращение URL: Пользователи могут преобразовать длинные URL в короткие ссылки, которые легче обменивать и использовать.
-Перенаправление по коротким ссылкам: Каждая сокращенная ссылка перенаправляет пользователя на оригинальный URL.
-Хранение и Управление Ссылками: Сервис предоставляет интерфейс для управления сокращенными ссылками, включая возможность отметить ссылку как удаленную.
-Поддержка Асинхронных Задач: Сервис поддерживает асинхронное удаление ссылок и способен обрабатывать запросы на удаление в фоновом режиме.
+### Для взаимодействия с сервисом предоставляется [HTTP API](./api.md).
 
-Технологии  
-Go (Golang): Основной язык программирования проекта.
-PostgreSQL: Система управления базами данных для хранения информации о ссылках.
-Gin Web Framework: Используется для реализации веб-сервера и маршрутизации.
-Docker: Используется для контейнеризации приложения.
+### Структура базы данных:
+
+![schema.png](DB%20scheme.png)
+
+## Основные Функции  
+  - Сокращение URL: Пользователи могут преобразовывать длинные URL в короткие ссылки, которые легче обменивать и использовать.
+  - Перенаправление по коротким ссылкам: Каждая сокращенная ссылка перенаправляет пользователя на оригинальный URL.
+  - Хранение и Управление Ссылками: Сервис предоставляет интерфейс для управления сокращенными ссылками, включая возможность отметить ссылку как удаленную.
+  - Поддержка Асинхронных Задач: Сервис поддерживает асинхронное удаление ссылок и способен обрабатывать запросы на удаление в фоновом режиме.
+
 
 Начало Работы  
 Чтобы начать использовать сервис, выполните следующие шаги:
 
 Клонирование репозитория: Склонируйте репозиторий проекта на свой локальный компьютер.
 Настройка базы данных: Настройте и запустите локальный экземпляр PostgreSQL (Напремер подняв образ в Docker)
-Запуск приложения: Запустите сервис сокращения ссылок на вашем компьютере.
+Запуск приложения: Запустите сервис сокращения ссылок на вашем компьютере используя следующие настройки.
+
+Запуск возможен с использованием cli флагов и env переменных в следующем приоритете (env||cli flags||JSON config)
+- `CONFIG` (`-с`):**Путь к конфигурационному JSON файлу**: По умолчанию — `пусто`.
+- `SERVER_ADDRESS` (`-a`):**Адрес HTTP/HTTPS сервера**: По умолчанию — `localhost:8080`.
+- `LOG_LEVEL` (`-l`):**Уровень логирования**: По умолчанию установлен на `info`.
+- `BASE_URL` (`-b`): **URL префикс используемый для формирования сокращенной ссылки**: По умолчанию — `http://localhost:8080`.
+- `DATABASE_DSN` (`-d`):**Данные для подключения к базе данных**: По умолчанию установлен на `пусто`.
+- `FILE_STORAGE_PATH` (`-f`):**Путь сохранения файла локального хранения данных**: По умолчанию установлен на `/tmp/short-url-db.json`.
+- `ENABLE_TLS` (`-s`):**Включение TLS сервера для HTTPS API**: По умолчанию установлен на `пусто` и запускается по HTTP.
+- `TRUSTED_SUBNET` (`-t`):**Список доверенных подсетей в формате "1.1.1.1, 2.2.2.2"**: По умолчанию установлен на `пусто`.
+- `GRPC_SERVER` (`-g`):**Адрес gRPC сервера**: По умолчанию установлен на `:3200`.
+
 
 Контрибуция  
 Этот проект был разработан как часть учебной программы, и мы приветствуем любые предложения и улучшения. Если у вас есть идеи по улучшению проекта, не стесняйтесь отправлять Pull Requests или создавать Issues.
-
-
-# EN
-# URL Shortener  
-The URL Shortener is a project developed as part of the Yandex Practicum my training program. This service allows users to shorten long URLs into a more convenient format, making them easier to share and use.
-
-Key Features  
-URL Shortening: Users can transform long URLs into short links for easier sharing and usage.
-Redirection to Original URLs: Each shortened link redirects the user to the original URL.
-Link Management: The service provides an interface for managing shortened links, including the ability to mark a link as deleted.
-Asynchronous Task Support: The service supports asynchronous link deletion, capable of handling deletion requests in the background.
-
-Technologies  
-Go (Golang): The primary programming language used in the project.
-PostgreSQL: Database management system for storing link information.
-Gin Web Framework: Used for implementing the web server and routing.
-Docker: Used for containerizing the application.
-
-Getting Started  
-To start using the service, follow these steps:
-
-Clone the Repository: Clone the project repository to your local machine.
-Database Setup: Set up and run a local instance of PostgreSQL.
-Launch the Application: Run the URL Shortening service on your machine.
-Contribution
-This project was developed as part of an educational program, and we welcome any suggestions and improvements. If you have ideas for enhancing the project, feel free to submit Pull Requests or create Issues.
